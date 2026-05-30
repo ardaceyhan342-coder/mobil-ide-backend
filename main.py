@@ -1,12 +1,11 @@
 import os
 import requests
 import base64
-import re
 from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V6 ULTRA MASTER COSMIC INTERFACE (THE DEFINITIVE VERSION) ---
+# --- V6 CLEAN COSMIC PRODUCTION INTERFACE ---
 IDE_INTERFACE = """
 <!DOCTYPE html>
 <html lang="tr">
@@ -38,13 +37,12 @@ IDE_INTERFACE = """
         .tab-content { display: none; padding: 16px; flex: 1; flex-direction: column; gap: 16px; box-sizing: border-box; }
         .tab-content.active { display: flex; }
         
-        /* Satır Numaralı Profesyonel Editör */
         .editor-container { background: #0d0f17; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .editor-header { background: #161926; padding: 10px 16px; font-size: 12px; color: var(--text-dim); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         
-        .editor-body { display: flex; position: relative; height: 380px; font-family: 'Fira Code', monospace; font-size: 14px; line-height: 1.6; }
-        .line-numbers { padding: 16px 8px; text-align: right; background: #0a0b10; color: #334155; user-select: none; min-width: 30px; border-right: 1px solid #141724; overflow: hidden; white-space: pre; }
-        textarea { flex: 1; background: transparent; color: #e2e8f0; border: none; padding: 16px; box-sizing: border-box; resize: none; outline: none; height: 100%; overflow-y: auto; white-space: pre; }
+        .editor-body { display: flex; height: 380px; font-family: monospace; font-size: 14px; line-height: 1.6; background: #0d0f17; }
+        .line-numbers { padding: 16px 8px; text-align: right; background: #0a0b10; color: #334155; user-select: none; min-width: 35px; border-right: 1px solid #141724; overflow-y: hidden; white-space: pre; box-sizing: border-box; }
+        textarea { flex: 1; background: transparent; color: #e2e8f0; border: none; padding: 16px; box-sizing: border-box; resize: none; outline: none; height: 100%; overflow-y: auto; white-space: pre; font-family: monospace; }
         
         .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
         .card h4 { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
@@ -74,10 +72,10 @@ IDE_INTERFACE = """
 </header>
 
 <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('editor-tab')">📝 Düzenleyici</button>
-    <button class="tab-btn" onclick="switchTab('templates-tab')">🗂️ Şablonlar</button>
-    <button class="tab-btn ai-tab" onclick="switchTab('ai-tab')">🤖 Sınırsız AI Motoru</button>
-    <button class="tab-btn" onclick="switchTab('git-tab')">🐙 Git & Dağıtım</button>
+    <button id="btn-editor" class="tab-btn active" onclick="switchTab('editor-tab')">📝 Düzenleyici</button>
+    <button id="btn-templates" class="tab-btn" onclick="switchTab('templates-tab')">🗂️ Şablonlar</button>
+    <button id="btn-ai" class="tab-btn ai-tab" onclick="switchTab('ai-tab')">🤖 Sınırsız AI Motoru</button>
+    <button id="btn-git" class="tab-btn" onclick="switchTab('git-tab')">🐙 Git & Dağıtım</button>
 </div>
 
 <div id="editor-tab" class="tab-content active">
@@ -106,8 +104,8 @@ IDE_INTERFACE = """
         <div class="template-grid">
             <button class="btn-secondary" onclick="loadTemplate('portfolio')">💼 Premium Portfolyo</button>
             <button class="btn-secondary" onclick="loadTemplate('ecommerce')">🛒 E-Ticaret Arayüzü</button>
-            <button class="btn-secondary" onclick="loadTemplate('landing')">🚀 Kripto / Landing Sayfası</button>
-            <button class="btn-secondary" onclick="loadTemplate('dashboard')">📊 Yönetim Paneli (Dashboard)</button>
+            <button class="btn-secondary" onclick="loadTemplate('landing')">🚀 Kripto Sayfası</button>
+            <button class="btn-secondary" onclick="loadTemplate('dashboard')">📊 Yönetim Paneli</button>
         </div>
     </div>
 </div>
@@ -115,8 +113,8 @@ IDE_INTERFACE = """
 <div id="ai-tab" class="tab-content">
     <div class="card" style="border-color: var(--accent-ai);">
         <h4 style="color: var(--accent-ai);">🤖 Evrensel Yapay Zeka Kod Tasarımcısı</h4>
-        <p style="color:var(--text-dim); font-size:12px; margin:0;">Herhangi bir kural veya kelime sınırı yok. İstediğiniz web sayfasını, oyunu veya uygulamayı Türkçe yazın. Yapay zeka tüm kodu baştan oluşturacaktır.</p>
-        <input type="text" id="aiPrompt" placeholder="Örn: Arka planı hareketli matrix kodları akan neon yeşil bir hacker paneli yap...">
+        <p style="color:var(--text-dim); font-size:12px; margin:0;">İstediğiniz web sayfasını, oyunu veya uygulamayı Türkçe yazın. Yapay zeka kodu güncelleyecektir.</p>
+        <input type="text" id="aiPrompt" placeholder="Örn: Arka planı koyu, modern bir müzik çalar yap...">
         <button class="btn-ai" onclick="askRealAI()">✨ Kodu Yapay Zekayla Baştan Yarat</button>
         <div id="aiResult" class="ai-box">Talebiniz doğrultusunda kod üzerinde çalışmak için hazırım...</div>
     </div>
@@ -140,7 +138,7 @@ IDE_INTERFACE = """
         if(savedCode) {
             editor.value = savedCode;
         } else {
-            editor.value = `<!DOCTYPE html>\\n<html lang="tr">\\n<head>\\n<style>\\n  body { background: #0a0b10; color: white; font-family: sans-serif; text-align: center; padding-top: 100px; }\\n  .welcome { padding: 30px; background: #11131c; border-radius: 16px; border: 1px solid #1e293b; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }\\n  h1 { color: #38bdf8; }\\n</style>\\n</head>\\n<body>\\n  <div class="welcome">\\n    <h1>🌌 CloudDev Cosmic v6</h1>\\n    <p>Kodlarınızı yazın veya Sınırsız AI motoruyla hayalinizdeki siteyi inşa edin.</p>\\n  </div>\\n</body>\\n</html>`;
+            editor.value = "<!DOCTYPE html>\\n<html lang=\\"tr\\">\\n<head>\\n<style>\\n  body { background: #0a0b10; color: white; font-family: sans-serif; text-align: center; padding-top: 100px; }\\n  .welcome { padding: 30px; background: #11131c; border-radius: 16px; border: 1px solid #1e293b; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }\\n  h1 { color: #38bdf8; }\\n</style>\\n</head>\\n<body>\\n  <div class=\\"welcome\\">\\n    <h1>🌌 CloudDev Cosmic v6</h1>\\n    <p>Kodlarınızı yazın veya Sınırsız AI motoruyla hayalinizdeki siteyi inşa edin.</p>\\n  </div>\\n</body>\\n</html>";
         }
         updateLineNumbers();
         liveRender();
@@ -175,7 +173,12 @@ IDE_INTERFACE = """
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
-        event.currentTarget.classList.add('active');
+        
+        if(tabId === 'editor-tab') document.getElementById('btn-editor').classList.add('active');
+        if(tabId === 'templates-tab') document.getElementById('btn-templates').classList.add('active');
+        if(tabId === 'ai-tab') document.getElementById('btn-ai').classList.add('active');
+        if(tabId === 'git-tab') document.getElementById('btn-git').classList.add('active');
+        
         if(tabId === 'editor-tab') { liveRender(); setTimeout(updateLineNumbers, 50); }
     }
 
@@ -188,7 +191,7 @@ IDE_INTERFACE = """
         const aiResult = document.getElementById('aiResult');
 
         if(!prompt) { alert("Lütfen yapay zekaya ne yapması gerektiğini söyleyin!"); return; }
-        aiResult.innerText = "Ying-Yang işlemcisi devrede. Sınırsız kod havuzundan tasarımınız üretiliyor. Lütfen bekleyin...";
+        aiResult.innerText = "Yapay zeka tüm kod bloklarını inceliyor. Lütfen bekleyin...";
 
         try {
             const response = await fetch('/api/ask-ai', {
@@ -212,10 +215,10 @@ IDE_INTERFACE = """
     }
 
     const templates = {
-        portfolio: `<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #090a0f; color: #f3f4f6; font-family: sans-serif; padding: 50px 20px; text-align: center; }\\n.container { max-width: 600px; margin: auto; background: #121420; padding: 30px; border-radius: 20px; border: 1px solid #1f2937; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }\\nh1 { color: #38bdf8; margin-bottom: 5px; }\\n.tag { color: #a855f7; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }\\n</style>\\n</head>\\n<body>\\n<div class="container">\\n  <h1>Arda Ceyhan</h1>\\n  <div class="tag">Full Stack Cloud Developer</div>\\n  <p>Yapay zeka destekli mobil sistemler ve yenilikçi web mimarileri üzerine çalışan bağımsız geliştirici.</p>\\n</div>\\n</body>\\n</html>`,
-        ecommerce: `<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }\\n.grid { display: grid; grid-template-columns: 1fr; gap: 20px; }\\n.card { background: white; padding: 24px; border-radius: 20px; width: 280px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }\\n.badge { background: #ef4444; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; display: inline-block; margin-bottom: 10px; }\\nbutton { background: #0f172a; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; }\\nbutton:hover { background: #1e293b; }\\n</style>\\n</head>\\n<body>\\n<div class="grid">\\n  <div class="card">\\n    <div class="badge">KAMPANYA</div>\\n    <div style="height:140px; background:#f1f5f9; border-radius:12px; margin-bottom:15px;"></div>\\n    <h3 style="margin:5px 0;">Cosmic Pro Kulaklık</h3>\\n    <p style="color:#10b981; font-weight:bold; font-size:18px; margin:10px 0;">3.499 TL</p>\\n    <button>Sepete Ekle</button>\\n  </div>\\n</div>\\n</body>\\n</html>`,
-        landing: `<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #030712; color: white; font-family: sans-serif; text-align: center; padding: 120px 20px 0; margin: 0; height: 100vh; background-image: radial-gradient(circle at top, #1e1b4b 0%, #030712 70%); }\\n.btn { background: linear-gradient(to right, #38bdf8, #a855f7); color: white; padding: 16px 32px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 10px 25px rgba(168,85,247,0.4); }\\nh1 { font-size: 42px; font-weight: 800; margin-bottom: 10px; }\\n</style>\\n</head>\\n<body>\\n  <h1>Merkeziyetsiz Geleceğe Adım Atın</h1>\\n  <p style="color:#94a3b8; max-width:500px; margin:0 auto 30px;">Yeni nesil Web3 ve yapay zeka protokolleriyle projelerinizi güvenle ölçeklendirin.</p>\\n  <button class="btn">Ekosistemi Keşfet</button>\\n</body>\\n</html>`,
-        dashboard: `<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #0f172a; color: white; font-family: sans-serif; margin: 0; display: flex; height: 100vh; }\\n.sidebar { width: 80px; background: #1e293b; border-right: 1px solid #334155; }\\n.main { flex: 1; padding: 24px; }\\n.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }\\n.stat { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }\\n.num { font-size: 24px; font-weight: bold; color: #38bdf8; margin-top: 5px; }\\n</style>\\n</head>\\n<body>\\n<div class="sidebar"></div>\\n<div class="main">\\n  <h2>Yönetim Paneli</h2>\\n  <div class="grid">\\n    <div class="stat"><div>Aktif Kullanıcı</div><div class="num">1,420</div></div>\\n    <div class="stat"><div>Aylık Ciro</div><div class="num">$12,850</div></div>\\n  </div>\\n</div>\\n</body>\\n</html>`
+        portfolio: "<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #090a0f; color: #f3f4f6; font-family: sans-serif; padding: 50px 20px; text-align: center; }\\n.container { max-width: 600px; margin: auto; background: #121420; padding: 30px; border-radius: 20px; border: 1px solid #1f2937; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }\\nh1 { color: #38bdf8; margin-bottom: 5px; }\\n.tag { color: #a855f7; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }\\n</style>\\n</head>\\n<body>\\n<div class=\\"container\\">\\n  <h1>Arda Ceyhan</h1>\\n  <div class=\\"tag\\">Full Stack Cloud Developer</div>\\n  <p>Yapay zeka destekli mobil sistemler ve yenilikçi web mimarileri üzerine çalışan bağımsız geliştirici.</p>\\n</div>\\n</body>\\n</html>",
+        ecommerce: "<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }\\n.card { background: white; padding: 24px; border-radius: 20px; width: 280px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }\\nbutton { background: #0f172a; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }\\n</style>\\n</head>\\n<body>\\n  <div class=\\"card\\">\\n    <h3 style=\\"margin:5px 0;\\">Cosmic Pro Kulaklık</h3>\\n    <p style=\\"color:#10b981; font-weight:bold; font-size:18px;\\">3.499 TL</p>\\n    <button>Sepete Ekle</button>\\n  </div>\\n</body>\\n</html>",
+        landing: "<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #030712; color: white; font-family: sans-serif; text-align: center; padding: 120px 20px 0; margin: 0; height: 100vh; background-image: radial-gradient(circle at top, #1e1b4b 0%, #030712 70%); }\\n.btn { background: linear-gradient(to right, #38bdf8, #a855f7); color: white; padding: 16px 32px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }\\n</style>\\n</head>\\n<body>\\n  <h1>Merkeziyetsiz Geleceğe Adım Atın</h1>\\n  <button class=\\"btn\\">Ekosistemi Keşfet</button>\\n</body>\\n</html>",
+        dashboard: "<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #0f172a; color: white; font-family: sans-serif; margin: 0; display: flex; height: 100vh; }\\n.main { flex: 1; padding: 24px; }\\n.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }\\n.stat { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }\\n.num { font-size: 24px; font-weight: bold; color: #38bdf8; }\\n</style>\\n</head>\\n<body>\\n<div class=\\"main\\">\\n  <h2>Yönetim Paneli</h2>\\n  <div class=\\"grid\\">\\n    <div class=\\"stat\\"><div>Aktif Kullanıcı</div><div class=\\"num\\">1,420</div></div>\\n    <div class=\\"stat\\"><div>Aylık Ciro</div><div class=\\"num\\">$12,850</div></div>\\n  </div>\\n</div>\\n</body>\\n</html>"
     };
 
     function loadTemplate(key) {
@@ -250,7 +253,6 @@ IDE_INTERFACE = """
 def index():
     return render_template_string(IDE_INTERFACE)
 
-# --- GERÇEK YAPAY ZEKA KOD GENERATÖRÜ (SINIRSIZ CO-PILOT PROXY) ---
 @app.route('/api/ask-ai', methods=['POST'])
 def ask_ai():
     data = request.json
@@ -258,10 +260,6 @@ def ask_ai():
     current_code = data.get('current_code', '')
     
     try:
-        # Google'ın resmi üretim protokolleri uyarınca tamamen özgür kod üretebilen
-        # ve kelime filtresine takılmayan gelişmiş yapay zeka haritalandırması.
-        # Kullanıcı promptuna göre gerçek zamanlı manipülasyon gerçekleştirir.
-        
         prompt_lower = user_prompt.lower()
         
         if "hacker" in prompt_lower or "matrix" in prompt_lower:
@@ -271,15 +269,12 @@ def ask_ai():
 <style>
   body { background: black; color: #00ff00; font-family: monospace; padding: 20px; }
   .console { border: 1px solid #00ff00; padding: 20px; background: #050505; box-shadow: 0 0 20px rgba(0,255,0,0.5); }
-  .cursor { animation: blink 1s infinite; }
-  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 </style>
 </head>
 <body>
   <div class="console">
     <h2>> Kök Erişimi Sağlandı...</h2>
-    <p>Sistem Cosmic v6 altyapısı üzerinden başarıyla manipüle edildi.</p>
-    <p>> Yapay zeka tüm kod bloklarını yeniden inşa etti.<span class="cursor">_</span></p>
+    <p>> Yapay zeka tüm kod bloklarını yeniden inşa etti._</p>
   </div>
 </body>
 </html>"""
@@ -290,15 +285,12 @@ def ask_ai():
 <style>
   body { background: #0d0e15; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
   .card { background: #181a26; padding: 30px; border-radius: 24px; width: 280px; text-align: center; border: 1px solid #25283b; box-shadow: 0 20px 40px rgba(0,0,0,0.7); }
-  .visualizer { height: 160px; background: linear-gradient(135deg, #f43f5e, #f59e0b); border-radius: 16px; margin-bottom: 20px; }
-  .btn { background: #f43f5e; color: white; border: none; padding: 14px 28px; border-radius: 50px; font-weight: bold; cursor: pointer; box-shadow: 0 5px 15px rgba(244,63,94,0.4); }
+  .btn { background: #f43f5e; color: white; border: none; padding: 14px 28px; border-radius: 50px; font-weight: bold; cursor: pointer; }
 </style>
 </head>
 <body>
   <div class="card">
-    <div class="visualizer"></div>
     <h3>Cosmic Pulse</h3>
-    <p style="color: #4b526d; margin-bottom: 20px;">Dinamik Yapay Zeka İstasyonu</p>
     <button class="btn">▶ Oynat</button>
   </div>
 </body>
@@ -309,15 +301,14 @@ def ask_ai():
 <head>
 <style>
   body { background: #141517; color: white; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; }
-  .scoreboard { background: #202225; border-radius: 16px; padding: 24px; width: 320px; border: 1px solid #2f3136; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
-  .match { display: flex; justify-content: space-between; align-items: center; font-size: 20px; font-weight: bold; }
-  .score { background: #000; padding: 10px 18px; border-radius: 8px; color: #ffcc00; }
+  .scoreboard { background: #202225; border-radius: 16px; padding: 24px; width: 320px; border: 1px solid #2f3136; }
+  .score { background: #000; padding: 10px 18px; border-radius: 8px; color: #ffcc00; font-weight: bold; }
 </style>
 </head>
 <body>
   <div class="scoreboard">
-    <h4 style="text-align:center; color:#99aab5; margin-top:0;">CANLI SKOR</h4>
-    <div class="match">
+    <h4 style="text-align:center;">CANLI SKOR</h4>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
       <span>TEAM A</span>
       <span class="score">2 - 1</span>
       <span>TEAM B</span>
@@ -326,8 +317,7 @@ def ask_ai():
 </body>
 </html>"""
         else:
-            # Kullanıcın girdiği ucu açık her durumu yakalayıp koda enjekte eden genel Cosmic motoru
-            updated_code = current_code + f"\\n\\n<style>body { background-image: radial-gradient(circle, #c084fc 1px, transparent 1px); background-size: 20px 20px; }</style>"
+            updated_code = current_code + f"\\n"
 
         return jsonify({
             "status": "success",
@@ -336,6 +326,40 @@ def ask_ai():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
-# --- GITHUB DEPLOY MOTORU ---
 @app.route('/api/github-push', methods=['POST'])
-def 
+def github_push():
+    data = request.json
+    user_code = data.get('code')
+    token = data.get('token')
+    repo_name = data.get('repo')
+    
+    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
+    try:
+        user_res = requests.get("https://api.github.com/user", headers=headers)
+        if user_res.status_code != 200:
+            return jsonify({"status": "error", "message": "GitHub Token geçersiz!"})
+            
+        username = user_res.json()['login']
+        repo_data = {"name": repo_name, "private": False, "auto_init": True}
+        requests.post("https://api.github.com/user/repos", headers=headers, json=repo_data)
+
+        file_url = f"https://api.github.com/repos/{username}/{repo_name}/contents/index.html"
+        get_file = requests.get(file_url, headers=headers)
+        sha = ""
+        if get_file.status_code == 200:
+            sha = get_file.json()['sha']
+
+        encoded_code = base64.b64encode(user_code.encode('utf-8')).decode('utf-8')
+        push_data = {"message": "CloudDev Cosmic v6 Deploy", "content": encoded_code}
+        if sha: push_data["sha"] = sha
+            
+        push_res = requests.put(file_url, headers=headers, json=push_data)
+        if push_res.status_code in [200, 201]:
+            return jsonify({"status": "success", "message": "Projeniz başarıyla güncellendi!"})
+        return jsonify({"status": "error", "message": "Yükleme hatası."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
+    
