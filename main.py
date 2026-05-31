@@ -5,7 +5,7 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V6.5 ULTIMATE COSMIC ALL-IN-ONE INTERFACE (EKSİKSİZ & HATASIZ) ---
+# --- V6.5 ULTIMATE COSMIC ALL-IN-ONE INTERFACE (SUNUCU HATALARI ENGELLENDİ) ---
 IDE_INTERFACE = """<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -162,7 +162,7 @@ IDE_INTERFACE = """<!DOCTYPE html>
     window.onload = function() {
         const savedProject = localStorage.getItem('clouddev_ultimate_project');
         if(savedProject) {
-            projectFiles = JSON.parse(savedProject);
+            try { projectFiles = JSON.parse(savedProject); } catch(e){}
         }
         editor.value = projectFiles[currentFile];
         updateLineNumbers();
@@ -293,7 +293,7 @@ IDE_INTERFACE = """<!DOCTYPE html>
                 aiResult.innerText = "Hata: " + data.message;
             }
         } catch (e) {
-            aiResult.innerText = "Yapay zeka sunucusu yanıt vermedi.";
+            aiResult.innerText = "Sunucu bağlantı hatası veya geçersiz AI yanıtı.";
         }
     }
 
@@ -347,13 +347,11 @@ IDE_INTERFACE = """<!DOCTYPE html>
             const data = await response.json();
             alert(data.message);
         } catch(e) {
-            alert("GitHub bağlantı hatası oluştu.");
+            alert("GitHub push işlemi sırasında sunucu hatası.");
         }
     }
 </script>
 </body>
 </html>"""
 
-@app.route('/')
-def index():
-    return render_template_stri
+@app.ro
