@@ -5,7 +5,7 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V10 ULTIMATE COSMIC PRODUCTION INTERFACE ---
+# --- V10 ULTIMATE COSMIC INTERFACE ---
 IDE_INTERFACE = """
 <!DOCTYPE html>
 <html lang="tr">
@@ -25,7 +25,6 @@ IDE_INTERFACE = """
             --success: #4ade80;
         }
         
-        /* Cyberpunk Theme */
         body.theme-cyberpunk {
             --bg-main: #0f051d;
             --bg-panel: #1a0b2e;
@@ -37,7 +36,6 @@ IDE_INTERFACE = """
             --success: #39ff14;
         }
         
-        /* Matrix Theme */
         body.theme-matrix {
             --bg-main: #000000;
             --bg-panel: #0d0d0d;
@@ -195,7 +193,7 @@ IDE_INTERFACE = """
 </html>`;
 
     window.onload = function() {
-        const savedCode = localStorage.getItem('clouddev_v6_code');
+        const savedCode = localStorage.getItem('clouddev_v10_code');
         const savedTheme = localStorage.getItem('clouddev_theme') || 'theme-cosmic';
         
         document.body.className = savedTheme;
@@ -249,7 +247,7 @@ IDE_INTERFACE = """
     }
 
     function autoSaveCode() {
-        localStorage.setItem('clouddev_v6_code', editor.value);
+        localStorage.setItem('clouddev_v10_code', editor.value);
         const indicator = document.getElementById('saveStatus');
         indicator.style.display = 'inline';
         setTimeout(() => { indicator.style.display = 'none'; }, 1500);
@@ -272,7 +270,7 @@ IDE_INTERFACE = """
         try {
             document.getElementById('previewFrame').srcdoc = editor.value;
         } catch(err) {
-            console.log("Önizleme yükleme hatası izole edildi.");
+            console.log("Önizleme yükleme hatası.");
         }
     }
 
@@ -446,4 +444,5 @@ def ask_ai():
     }
     
     try:
-        res = req
+        res = requests.post(API_URL, json=payload, timeout=25)
+        if res.status_code == 200
