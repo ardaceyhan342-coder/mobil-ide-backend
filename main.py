@@ -1,11 +1,12 @@
 import os
 import requests
 import base64
+import re
 from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V6.5 ULTIMATE COSMIC ALL-IN-ONE INTERFACE (SUNUCU HATALARI ENGELLENDİ) ---
+# --- V6.5 ULTIMATE COSMIC ALL-IN-ONE INTERFACE ---
 IDE_INTERFACE = """<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -38,18 +39,15 @@ IDE_INTERFACE = """<!DOCTYPE html>
         .tab-content { display: none; padding: 14px; flex: 1; flex-direction: column; gap: 14px; box-sizing: border-box; }
         .tab-content.active { display: flex; }
         
-        /* Çoklu Dosya Seçim Sistemi */
         .file-selector { display: flex; background: #090a10; padding: 6px 6px 0 6px; gap: 4px; border-bottom: 1px solid var(--border); }
         .file-tab { background: #11131f; color: var(--text-dim); border: 1px solid var(--border); border-bottom: none; padding: 8px 14px; font-size: 11px; font-weight: 700; border-top-left-radius: 6px; border-top-right-radius: 6px; cursor: pointer; }
         .file-tab.active { background: #0c0d14; color: var(--accent); border-color: var(--border); padding-bottom: 9px; margin-bottom: -1px; }
         
-        /* Editör Alanı */
         .editor-container { background: #0c0d14; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
         .editor-body { display: flex; position: relative; height: 320px; background: #0c0d14; overflow: hidden; }
         .line-numbers { padding: 16px 0; text-align: center; background: #06070a; color: #2d3748; user-select: none; width: 40px; border-right: 1px solid #141724; overflow: hidden; box-sizing: border-box; font-family: monospace; font-size: 13px; line-height: 18px; }
         textarea { flex: 1; background: transparent; color: #e2e8f0; border: none; padding: 16px; box-sizing: border-box; resize: none; outline: none; height: 100%; overflow-y: auto; overflow-x: auto; white-space: pre; word-wrap: normal; font-family: monospace; font-size: 13px; line-height: 18px; }
         
-        /* Entegre Canlı Konsol (Console) */
         .console-container { background: #05060b; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
         .console-header { background: #0e111a; padding: 8px 14px; font-size: 11px; font-weight: 700; color: var(--text-dim); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
         .console-log-box { padding: 12px; font-family: monospace; font-size: 12px; max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; background: #020305; min-height: 40px; }
@@ -70,7 +68,6 @@ IDE_INTERFACE = """<!DOCTYPE html>
         
         .ai-box { background: #030406; border-left: 3px solid var(--accent-ai); padding: 12px; border-radius: 6px; font-size: 12px; color: #cbd5e1; white-space: pre-wrap; max-height: 150px; overflow-y: auto; font-family: monospace; }
         .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .save-indicator { font-size: 11px; color: var(--success); font-weight: 600; display: none; }
     </style>
 </head>
 <body>
@@ -211,7 +208,6 @@ IDE_INTERFACE = """<!DOCTYPE html>
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         document.getElementById('btn-' + tabId.replace('-tab', '')).classList.add('active');
-        
         if(tabId === 'editor-tab') { liveRender(); setTimeout(updateLineNumbers, 50); }
     }
 
@@ -231,7 +227,6 @@ IDE_INTERFACE = """<!DOCTYPE html>
 
     function liveRender() {
         projectFiles[currentFile] = editor.value;
-        
         const consoleHookScript = `
             <script>
                 const _log = console.log;
@@ -245,7 +240,6 @@ IDE_INTERFACE = """<!DOCTYPE html>
                 };
             </script>
         `;
-
         let combinedSource = projectFiles.html;
         const cssStyleTag = `<style>${projectFiles.css}</style>`;
         if(combinedSource.includes('</head>')) {
@@ -253,24 +247,20 @@ IDE_INTERFACE = """<!DOCTYPE html>
         } else {
             combinedSource = cssStyleTag + combinedSource;
         }
-
         const jsScriptTag = consoleHookScript + `<script>${projectFiles.js}<\\/script>`;
         if(combinedSource.includes('</body>')) {
             combinedSource = combinedSource.replace('</body>', jsScriptTag + '</body>');
         } else {
             combinedSource = combinedSource + jsScriptTag;
         }
-
         document.getElementById('previewFrame').srcdoc = combinedSource;
     }
 
     async function askRealAI() {
         const prompt = document.getElementById('aiPrompt').value;
         const aiResult = document.getElementById('aiResult');
-
         if(!prompt) { alert("Lütfen bir talep girin!"); return; }
-        aiResult.innerText = "Yapay zeka tüm mimariyi (HTML, CSS, JS) sıfırdan tasarlıyor... (Lütfen bekleyin)";
-
+        aiResult.innerText = "Yapay zeka mimariyi kurguluyor... (Lütfen bekleyin)";
         try {
             const response = await fetch('/api/ask-ai', {
                 method: 'POST',
@@ -278,13 +268,11 @@ IDE_INTERFACE = """<!DOCTYPE html>
                 body: JSON.stringify({ prompt: prompt })
             });
             const data = await response.json();
-            
             if(data.status === "success") {
-                aiResult.innerText = "Yapay zeka kodları üretti ve tüm dosyalar güncellendi!";
+                aiResult.innerText = "Yapay zeka kodları başarıyla güncelledi!";
                 projectFiles.html = data.html;
                 projectFiles.css = data.css;
                 projectFiles.js = data.js;
-                
                 editor.value = projectFiles[currentFile];
                 updateLineNumbers();
                 localStorage.setItem('clouddev_ultimate_project', JSON.stringify(projectFiles));
@@ -293,7 +281,7 @@ IDE_INTERFACE = """<!DOCTYPE html>
                 aiResult.innerText = "Hata: " + data.message;
             }
         } catch (e) {
-            aiResult.innerText = "Sunucu bağlantı hatası veya geçersiz AI yanıtı.";
+            aiResult.innerText = "Bağlantı hatası veya geçersiz AI yanıtı.";
         }
     }
 
@@ -337,7 +325,6 @@ IDE_INTERFACE = """<!DOCTYPE html>
         const repo = document.getElementById('repoName').value;
         if(!token || !repo) { alert("Lütfen boş alanları doldurun!"); return; }
         projectFiles[currentFile] = editor.value;
-
         try {
             const response = await fetch('/api/github-push-all', {
                 method: 'POST',
@@ -354,4 +341,15 @@ IDE_INTERFACE = """<!DOCTYPE html>
 </body>
 </html>"""
 
-@app.ro
+# --- BACKEND APIS & CORE CONTROLLER (EKSİKSİZ KURUMSAL YAPILANDIRMA) ---
+
+@app.route('/')
+def index():
+    return render_template_string(IDE_INTERFACE)
+
+@app.route('/api/ask-ai', methods=['POST'])
+def ask_ai():
+    data = request.json or {}
+    user_prompt = data.get('prompt', '')
+    
+    API_URL = "https://api-inference.huggingface.co/mod
