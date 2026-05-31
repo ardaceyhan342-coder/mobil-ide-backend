@@ -138,12 +138,30 @@ IDE_INTERFACE = """
     const editor = document.getElementById('codeEditor');
     const lineNumbers = document.getElementById('lineNumbers');
 
+    const defaultCode = `<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { background: #0a0b10; color: white; font-family: sans-serif; text-align: center; padding-top: 100px; }
+  .welcome { padding: 30px; background: #11131c; border-radius: 16px; border: 1px solid #1e293b; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+  h1 { color: #38bdf8; }
+</style>
+</head>
+<body>
+  <div class="welcome">
+    <h1>🌌 CloudDev Cosmic v9 Pro</h1>
+    <p>Kodlarınızı yazın veya Sınırsız AI motoruyla hayalinizdeki siteyi inşa edin.</p>
+  </div>
+</body>
+</html>`;
+
     window.onload = function() {
         const savedCode = localStorage.getItem('clouddev_v6_code');
         if(savedCode) {
             editor.value = savedCode;
         } else {
-            editor.value = "<!DOCTYPE html>\\n<html lang=\\"tr\\">\\n<head>\\n<style>\\n  body { background: #0a0b10; color: white; font-family: sans-serif; text-align: center; padding-top: 100px; }\\n  .welcome { padding: 30px; background: #11131c; border-radius: 16px; border: 1px solid #1e293b; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }\\n  h1 { color: #38bdf8; }\\n</style>\\n</head>\\n<body>\\n  <div class=\\"welcome\\">\\n    <h1>🌌 CloudDev Cosmic v9 Pro</h1>\\n    <p>Kodlarınızı yazın veya Sınırsız AI motoruyla hayalinizdeki siteyi inşa edin.</p>\\n  </div>\\n</body>\\n</html>";
+            editor.value = defaultCode;
         }
         updateLineNumbers();
         liveRender();
@@ -236,10 +254,79 @@ IDE_INTERFACE = """
     }
 
     const templates = {
-        portfolio: "<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #090a0f; color: #f3f4f6; font-family: sans-serif; padding: 50px 20px; text-align: center; }\\n.container { max-width: 600px; margin: auto; background: #121420; padding: 30px; border-radius: 20px; border: 1px solid #1f2937; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }\\nh1 { color: #38bdf8; margin-bottom: 5px; }\\n.tag { color: #a855f7; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }\\n</style>\\n</head>\\n<body>\\n<div class=\\"container\\">\\n  <h1>Arda Ceyhan</h1>\\n  <div class=\\"tag\\">Full Stack Cloud Developer</div>\\n  <p>Yapay zeka destekli mobil sistemler ve yenilikçi web mimarileri üzerine çalışan bağımsız geliştirici.</p>\\n</div>\\n</body>\\n</html>",
-        ecommerce: "<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }\\n.card { background: white; padding: 24px; border-radius: 20px; width: 280px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }\\nbutton { background: #0f172a; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }\\n</style>\\n</head>\\n<body>\\n  <div class=\\"card\\">\\n    <h3 style=\\"margin:5px 0;\\">Cosmic Pro Kulaklık</h3>\\n    <p style=\\"color:#10b981; font-weight:bold; font-size:18px;\\">3.499 TL</p>\\n    <button>Sepete Ekle</button>\\n  </div>\\n</body>\\n</html>",
-        landing: "<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #030712; color: white; font-family: sans-serif; text-align: center; padding: 120px 20px 0; margin: 0; height: 100vh; background-image: radial-gradient(circle at top, #1e1b4b 0%, #030712 70%); }\\n.btn { background: linear-gradient(to right, #38bdf8, #a855f7); color: white; padding: 16px 32px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }\\n</style>\\n</head>\\n<body>\\n  <h1>Merkeziyetsiz Geleceğe Adım Atın</h1>\\n  <button class=\\"btn\\">Ekosistemi Keşfet</button>\\n</body>\\n</html>",
-        dashboard: "<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #0f172a; color: white; font-family: sans-serif; margin: 0; display: flex; height: 100vh; }\\n.main { flex: 1; padding: 24px; }\\n.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }\\n.num { font-size: 24px; font-weight: bold; color: #38bdf8; }\\n</style>\\n</head>\\n<body>\\n<div class=\\"main\\">\\n  <h2>Yönetim Paneli</h2>\\n  <div class=\\"grid\\">\\n    <div class=\\"stat\\"><div>Aktif Kullanıcı</div><div class=\\"num\\">1,420</div></div>\\n    <div class=\\"stat\\"><div>Aylık Ciro</div><div class=\\"num\\">$12,850</div></div>\\n  </div>\\n</div>\\n</body>\\n</html>"
+        portfolio: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { background: #090a0f; color: #f3f4f6; font-family: sans-serif; padding: 50px 20px; text-align: center; }
+.container { max-width: 600px; margin: auto; background: #121420; padding: 30px; border-radius: 20px; border: 1px solid #1f2937; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+h1 { color: #38bdf8; margin-bottom: 5px; }
+.tag { color: #a855f7; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Arda Ceyhan</h1>
+  <div class="tag">Full Stack Cloud Developer</div>
+  <p>Yapay zeka destekli mobil sistemler ve yenilikçi web mimarileri üzerine çalışan bağımsız geliştirici.</p>
+</div>
+</body>
+</html>`,
+        ecommerce: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { background: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+.card { background: white; padding: 24px; border-radius: 20px; width: 280px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+button { background: #0f172a; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h3 style="margin:5px 0;">Cosmic Pro Kulaklık</h3>
+    <p style="color:#10b981; font-weight:bold; font-size:18px;">3.499 TL</p>
+    <button>Sepete Ekle</button>
+  </div>
+</body>
+</html>`,
+        landing: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { background: #030712; color: white; font-family: sans-serif; text-align: center; padding: 120px 20px 0; margin: 0; height: 100vh; background-image: radial-gradient(circle at top, #1e1b4b 0%, #030712 70%); }
+.btn { background: linear-gradient(to right, #38bdf8, #a855f7); color: white; padding: 16px 32px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }
+</style>
+</head>
+<body>
+  <h1>Merkeziyetsiz Geleceğe Adım Atın</h1>
+  <button class="btn">Ekosistemi Keşfet</button>
+</body>
+</html>`,
+        dashboard: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { background: #0f172a; color: white; font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
+.main { flex: 1; padding: 24px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+.stat { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }
+.num { font-size: 24px; font-weight: bold; color: #38bdf8; }
+</style>
+</head>
+<body>
+<div class="main">
+  <h2>Yönetim Paneli</h2>
+  <div class="grid">
+    <div class="stat"><div>Aktif Kullanıcı</div><div class="num">1,420</div></div>
+    <div class="stat"><div>Aylık Ciro</div><div class="num">$12,850</div></div>
+  </div>
+</div>
+</body>
+</html>`
     };
 
     function loadTemplate(key) {
@@ -299,11 +386,9 @@ def ask_ai():
             raw_text = res.json()[0]['generated_text']
             updated_code = raw_text.split("<|im_start|>assistant\n")[-1].strip() if "<|im_start|>assistant\n" in raw_text else raw_text
             
-            # V9 Gelişmiş Filtreleme Katmanı: Markdown ve metinsel kirlilikleri kazı
             for clean_term in ["```html", "```css", "```javascript", "```js", "```", "<|im_end|>"]:
                 updated_code = updated_code.replace(clean_term, "")
             
-            # Eğer model yanlışlıkla baştan açıklama metni eklediyse ve DOCTYPE aşağı kaydıysa temizle
             if "<!DOCTYPE html>" in updated_code:
                 updated_code = updated_code[updated_code.find("<!DOCTYPE html>"):]
                 
@@ -349,4 +434,7 @@ def github_push():
             
         push_res = requests.put(file_url, headers=headers, json=push_data, timeout=15)
         if push_res.status_code in [200, 201]:
-            return jsonify({"status": "success
+            return jsonify({"status": "success", "message": "Projeniz başarıyla güncellendi!"})
+        return jsonify({"status": "error", "message": "Yükleme hatası."})
+    except Exception as e:
+    
