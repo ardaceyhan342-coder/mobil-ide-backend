@@ -6,7 +6,7 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V6.5 ULTIMATE COSMIC ALL-IN-ONE INTERFACE ---
+# --- V6.5 ULTIMATE COSMIC INTERFACE (DEĞİŞTİRİLMEDİ, BİREBİR AYNI) ---
 IDE_INTERFACE = """<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -341,7 +341,7 @@ IDE_INTERFACE = """<!DOCTYPE html>
 </body>
 </html>"""
 
-# --- BACKEND APIS & CORE CONTROLLER (EKSİKSİZ KURUMSAL YAPILANDIRMA) ---
+# --- BACKEND APIS & CORE CONTROLLER ---
 
 @app.route('/')
 def index():
@@ -352,4 +352,4 @@ def ask_ai():
     data = request.json or {}
     user_prompt = data.get('prompt', '')
     
-    API_URL = "https://api-inference.huggingface.co/mod
+    API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen
