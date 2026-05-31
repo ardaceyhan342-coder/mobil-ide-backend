@@ -5,80 +5,94 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V6.2 FINAL CLEAN PRODUCTION INTERFACE ---
+# --- V6.5 ULTIMATE COSMIC ALL-IN-ONE INTERFACE ---
 IDE_INTERFACE = """<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CloudDev Studio v6.2</title>
+    <title>CloudDev Ultimate Studio v6.5</title>
     <style>
         :root {
-            --bg-main: #08090c;
-            --bg-panel: #11131c;
+            --bg-main: #06070a;
+            --bg-panel: #0d0f17;
+            --bg-darker: #05060a;
             --accent: #38bdf8;
             --accent-ai: #c084fc;
             --text: #f8fafc;
             --text-dim: #64748b;
             --border: #1e293b;
             --success: #4ade80;
+            --danger: #f87171;
         }
         body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg-main); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; }
-        header { background: var(--bg-panel); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); box-shadow: 0 4px 30px rgba(0,0,0,0.4); }
-        header h3 { margin: 0; font-size: 16px; font-weight: 800; background: linear-gradient(to right, #38bdf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        header { background: var(--bg-panel); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        header h3 { margin: 0; font-size: 15px; font-weight: 800; background: linear-gradient(to right, #38bdf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .tab-bar { display: flex; background: #0b0c12; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
-        .tab-bar::-webkit-scrollbar { display: none; }
-        .tab-btn { background: none; border: none; color: var(--text-dim); padding: 14px 22px; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
+        .main-tab-bar { display: flex; background: var(--bg-darker); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+        .main-tab-bar::-webkit-scrollbar { display: none; }
+        .tab-btn { background: none; border: none; color: var(--text-dim); padding: 14px 20px; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
         .tab-btn.active { color: var(--text); border-bottom: 2px solid var(--accent); background: var(--bg-panel); }
         .tab-btn.ai-tab.active { border-bottom: 2px solid var(--accent-ai); }
         
-        .tab-content { display: none; padding: 16px; flex: 1; flex-direction: column; gap: 16px; box-sizing: border-box; }
+        .tab-content { display: none; padding: 14px; flex: 1; flex-direction: column; gap: 14px; box-sizing: border-box; }
         .tab-content.active { display: flex; }
         
-        .editor-container { background: #0d0f17; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .editor-header { background: #161926; padding: 10px 16px; font-size: 12px; color: var(--text-dim); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        /* Çoklu Dosya Seçim Sistemi */
+        .file-selector { display: flex; background: #090a10; padding: 6px 6px 0 6px; gap: 4px; border-bottom: 1px solid var(--border); }
+        .file-tab { background: #11131f; color: var(--text-dim); border: 1px solid var(--border); border-bottom: none; padding: 8px 14px; font-size: 11px; font-weight: 700; border-top-left-radius: 6px; border-top-right-radius: 6px; cursor: pointer; }
+        .file-tab.active { background: #0c0d14; color: var(--accent); border-color: var(--border); padding-bottom: 9px; margin-bottom: -1px; }
         
-        .editor-body { display: flex; position: relative; height: 380px; background: #0d0f17; overflow: hidden; }
-        .line-numbers { padding: 16px 0px; text-align: center; background: #0a0b10; color: #334155; user-select: none; width: 45px; border-right: 1px solid #141724; overflow: hidden; box-sizing: border-box; font-family: monospace; font-size: 14px; line-height: 20px; }
-        textarea { flex: 1; background: transparent; color: #e2e8f0; border: none; padding: 16px; box-sizing: border-box; resize: none; outline: none; height: 100%; overflow-y: auto; overflow-x: auto; white-space: pre; word-wrap: normal; font-family: monospace; font-size: 14px; line-height: 20px; }
+        /* Editör Alanı */
+        .editor-container { background: #0c0d14; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .editor-body { display: flex; position: relative; height: 320px; background: #0c0d14; overflow: hidden; }
+        .line-numbers { padding: 16px 0; text-align: center; background: #06070a; color: #2d3748; user-select: none; width: 40px; border-right: 1px solid #141724; overflow: hidden; box-sizing: border-box; font-family: monospace; font-size: 13px; line-height: 18px; }
+        textarea { flex: 1; background: transparent; color: #e2e8f0; border: none; padding: 16px; box-sizing: border-box; resize: none; outline: none; height: 100%; overflow-y: auto; overflow-x: auto; white-space: pre; word-wrap: normal; font-family: monospace; font-size: 13px; line-height: 18px; }
         
-        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
-        .card h4 { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        /* Entegre Canlı Konsol (Console) */
+        .console-container { background: #05060b; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+        .console-header { background: #0e111a; padding: 8px 14px; font-size: 11px; font-weight: 700; color: var(--text-dim); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+        .console-log-box { padding: 12px; font-family: monospace; font-size: 12px; max-height: 100px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; background: #020305; min-height: 40px; }
+        .log-item { color: #cbd5e1; }
+        .log-item.error { color: var(--danger); background: rgba(248,113,113,0.05); padding: 2px 6px; border-radius: 4px; }
         
-        input { background: #181b28; color: var(--text); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 13px; outline: none; }
-        button { background: var(--accent); color: #090d16; border: none; padding: 12px 20px; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+        .card h4 { margin: 0; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        
+        input { background: #141724; color: var(--text); border: 1px solid var(--border); padding: 10px 14px; border-radius: 8px; font-size: 13px; outline: none; }
+        button { background: var(--accent); color: #06070a; border: none; padding: 10px 18px; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
         .btn-success { background: var(--success); color: #052e16; }
         .btn-ai { background: var(--accent-ai); color: #2e1065; }
-        .btn-secondary { background: #1e2235; color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary { background: #161925; color: var(--text); border: 1px solid var(--border); }
         
         .preview-wrapper { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #fff; }
-        iframe { width: 100%; height: 320px; border: none; background: white; }
+        iframe { width: 100%; height: 300px; border: none; background: white; }
         
-        .ai-box { background: #05060a; border-left: 4px solid var(--accent-ai); padding: 14px; border-radius: 8px; font-size: 13px; color: #cbd5e1; white-space: pre-wrap; max-height: 200px; overflow-y: auto; font-family: monospace; }
-        .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .ai-box { background: #030406; border-left: 3px solid var(--accent-ai); padding: 12px; border-radius: 6px; font-size: 12px; color: #cbd5e1; white-space: pre-wrap; max-height: 150px; overflow-y: auto; font-family: monospace; }
+        .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
         .save-indicator { font-size: 11px; color: var(--success); font-weight: 600; display: none; }
     </style>
 </head>
 <body>
 
 <header>
-    <h3>✨ CloudDev Cosmic v6.2</h3>
+    <h3>🌌 CloudDev Ultimate v6.5</h3>
     <button onclick="liveRender()">⚡ Çalıştır</button>
 </header>
 
-<div class="tab-bar">
-    <button id="btn-editor" class="tab-btn active" onclick="switchTab('editor-tab')">📝 Düzenleyici</button>
+<div class="main-tab-bar">
+    <button id="btn-editor" class="tab-btn active" onclick="switchTab('editor-tab')">📝 Editör</button>
     <button id="btn-templates" class="tab-btn" onclick="switchTab('templates-tab')">🗂️ Şablonlar</button>
-    <button id="btn-ai" class="tab-btn ai-tab" onclick="switchTab('ai-tab')">🤖 Sınırsız AI Motoru</button>
-    <button id="btn-git" class="tab-btn" onclick="switchTab('git-tab')">🐙 Git & Dağıtım</button>
+    <button id="btn-ai" class="tab-btn ai-tab" onclick="switchTab('ai-tab')">🤖 Sınırsız AI</button>
+    <button id="btn-git" class="tab-btn" onclick="switchTab('git-tab')">🐙 Dağıtım & Git</button>
 </div>
 
 <div id="editor-tab" class="tab-content active">
     <div class="editor-container">
-        <div class="editor-header">
-            <span>index.html</span>
-            <span id="saveStatus" class="save-indicator">✓ Otomatik Kaydedildi</span>
+        <div class="file-selector">
+            <div id="file-html" class="file-tab active" onclick="switchFile('html')">index.html</div>
+            <div id="file-css" class="file-tab" onclick="switchFile('css')">style.css</div>
+            <div id="file-js" class="file-tab" onclick="switchFile('js')">script.js</div>
         </div>
         <div class="editor-body">
             <div id="lineNumbers" class="line-numbers">1</div>
@@ -86,8 +100,18 @@ IDE_INTERFACE = """<!DOCTYPE html>
         </div>
     </div>
     
+    <div class="console-container">
+        <div class="console-header">
+            <span>💻 Canlı JavaScript Konsolu Çıktısı</span>
+            <span style="cursor:pointer; color:var(--danger);" onclick="clearConsole()">Temizle</span>
+        </div>
+        <div id="consoleLogBox" class="console-log-box">
+            <div class="log-item" style="color:var(--text-dim)">Konsol hazır, hata yok...</div>
+        </div>
+    </div>
+    
     <div class="card">
-        <h4>🖥️ Canlı Önizleme Ekranı</h4>
+        <h4>🖥️ Canlı Önizleme</h4>
         <div class="preview-wrapper">
             <iframe id="previewFrame"></iframe>
         </div>
@@ -96,10 +120,10 @@ IDE_INTERFACE = """<!DOCTYPE html>
 
 <div id="templates-tab" class="tab-content">
     <div class="card">
-        <h4>🗂️ Hazır Tasarım Altyapıları</h4>
+        <h4>🗂️ Hazır Mimari Altyapıları</h4>
         <div class="template-grid">
             <button class="btn-secondary" onclick="loadTemplate('portfolio')">💼 Premium Portfolyo</button>
-            <button class="btn-secondary" onclick="loadTemplate('ecommerce')">🛒 E-Ticaret Arayüzü</button>
+            <button class="btn-secondary" onclick="loadTemplate('ecommerce')">🛒 E-Ticaret Sayfası</button>
             <button class="btn-secondary" onclick="loadTemplate('landing')">🚀 Kripto Sayfası</button>
             <button class="btn-secondary" onclick="loadTemplate('dashboard')">📊 Yönetim Paneli</button>
         </div>
@@ -108,38 +132,70 @@ IDE_INTERFACE = """<!DOCTYPE html>
 
 <div id="ai-tab" class="tab-content">
     <div class="card" style="border-color: var(--accent-ai);">
-        <h4 style="color: var(--accent-ai);">🤖 Evrensel Yapay Zeka Kod Tasarımcısı</h4>
-        <input type="text" id="aiPrompt" placeholder="Örn: Arka planı koyu, modern bir müzik çalar yap...">
-        <button class="btn-ai" onclick="askRealAI()">✨ Kodu Yapay Zekayla Baştan Yarat</button>
-        <div id="aiResult" class="ai-box">Talebiniz doğrultusunda kod üzerinde çalışmak için hazırım...</div>
+        <h4 style="color: var(--accent-ai);">🤖 Evrensel Canlı Yapay Zeka Kod Motoru</h4>
+        <input type="text" id="aiPrompt" placeholder="Örn: Koyu temalı, neon ışıklı lüks bir kronometre uygulaması yap...">
+        <button class="btn-ai" onclick="askRealAI()">✨ Tüm Dosyaları Yapay Zekayla Baştan Yarat</button>
+        <div id="aiResult" class="ai-box">Ne tasarlamak istersiniz? Model komut bekliyor...</div>
     </div>
 </div>
 
 <div id="git-tab" class="tab-content">
     <div class="card">
-        <h4>🐙 GitHub Canlı Yayın Motoru</h4>
+        <h4>🐙 GitHub Canlı Yayın Entegrasyonu</h4>
         <input type="text" id="githubToken" placeholder="GitHub Personal Access Token">
-        <input type="text" id="repoName" placeholder="Repo Adı (Örn: harika-projem)">
-        <button class="btn-success" onclick="pushToGithub()">🚀 Projeyi Deplo Et</button>
+        <input type="text" id="repoName" placeholder="Repo Adı (Örn: cosmic-studio-pro)">
+        <button class="btn-success" onclick="pushToGithubAll()">🚀 Tüm Projeyi Yayınla (Deploy)</button>
     </div>
 </div>
 
 <script>
+    // Dosya içeriklerini hafızada tutan ana obje
+    let projectFiles = {
+        html: '<!DOCTYPE html>\\n<html lang="tr">\\n<head>\\n  <link rel="stylesheet" href="style.css">\\n</head>\\n<body>\\n  <div class="box">\\n    <h1>🌌 CloudDev Ultimate v6.5</h1>\\n    <p>Üçlü dosya sistemi, canlı konsol ve gerçek AI devrede!</p>\\n    <button onclick="testFunction()">Konsolu Test Et</button>\\n  </div>\\n  <script src="script.js"><\\/script>\\n</body>\\n</html>',
+        css: 'body {\\n  background: #06070a;\\n  color: white;\\n  font-family: sans-serif;\\n  display: flex;\\n  justify-content: center;\\n  align-items: center;\\n  height: 80vh;\\n  margin: 0;\\n}\\n.box {\\n  text-align: center;\\n  padding: 30px;\\n  background: #0d0f17;\\n  border: 1px solid #1e293b;\\n  border-radius: 16px;\\n}',
+        js: 'function testFunction() {\\n  console.log("Merhaba! Canlı konsol sistemi kusursuz çalışıyor.");\\n}'
+    };
+
+    let currentFile = 'html';
     const editor = document.getElementById('codeEditor');
     const lineNumbers = document.getElementById('lineNumbers');
 
-    const defaultCode = '<!DOCTYPE html>\\n<html lang="tr">\\n<head>\\n<style>\\n  body { background: #0a0b10; color: white; font-family: sans-serif; text-align: center; padding-top: 100px; }\\n  .welcome { padding: 30px; background: #11131c; border-radius: 16px; border: 1px solid #1e293b; display: inline-block; }\\n  h1 { color: #38bdf8; }\\n</style>\\n</head>\\n<body>\\n  <div class="welcome">\\n    <h1>🌌 CloudDev Cosmic v6.2</h1>\\n    <p>Kodlarınızı yazın veya AI motorunu kullanın.</p>\\n  </div>\\n</body>\\n</html>';
-
     window.onload = function() {
-        const savedCode = localStorage.getItem('clouddev_v6_code');
-        editor.value = savedCode ? savedCode : defaultCode;
+        // Yerel hafızada kayıt varsa yükle
+        const savedProject = localStorage.getItem('clouddev_ultimate_project');
+        if(savedProject) {
+            projectFiles = JSON.parse(savedProject);
+        }
+        editor.value = projectFiles[currentFile];
         updateLineNumbers();
         liveRender();
+        
+        // Iframe'den gelen konsol loglarını dinleyen global altyapı
+        window.addEventListener('message', function(e) {
+            if(e.data && e.data.type === 'console-log') {
+                addConsoleItem(e.data.text, 'log');
+            } else if (e.data && e.data.type === 'console-error') {
+                addConsoleItem(e.data.text, 'error');
+            }
+        });
+    }
+
+    function switchFile(fileType) {
+        // Mevcut dosyadaki değişiklikleri kaydet
+        projectFiles[currentFile] = editor.value;
+        
+        document.querySelectorAll('.file-tab').forEach(el => el.classList.remove('active'));
+        document.getElementById('file-' + fileType).classList.add('active');
+        
+        currentFile = fileType;
+        editor.value = projectFiles[currentFile];
+        updateLineNumbers();
     }
 
     function handleEditorInput() {
+        projectFiles[currentFile] = editor.value;
         updateLineNumbers();
-        autoSaveCode();
+        localStorage.setItem('clouddev_ultimate_project', JSON.stringify(projectFiles));
     }
 
     function updateLineNumbers() {
@@ -155,28 +211,69 @@ IDE_INTERFACE = """<!DOCTYPE html>
         lineNumbers.scrollTop = editor.scrollTop;
     }
 
-    function autoSaveCode() {
-        localStorage.setItem('clouddev_v6_code', editor.value);
-        const indicator = document.getElementById('saveStatus');
-        indicator.style.display = 'inline';
-        setTimeout(() => { indicator.style.display = 'none'; }, 1500);
-    }
-
     function switchTab(tabId) {
+        projectFiles[currentFile] = editor.value;
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
-        
-        if(tabId === 'editor-tab') document.getElementById('btn-editor').classList.add('active');
-        if(tabId === 'templates-tab') document.getElementById('btn-templates').classList.add('active');
-        if(tabId === 'ai-tab') document.getElementById('btn-ai').classList.add('active');
-        if(tabId === 'git-tab') document.getElementById('btn-git').classList.add('active');
+        document.getElementById('btn-' + tabId.replace('-tab', '')).classList.add('active');
         
         if(tabId === 'editor-tab') { liveRender(); setTimeout(updateLineNumbers, 50); }
     }
 
+    // Konsol loglama arayüz yönetimi
+    function addConsoleItem(text, type) {
+        const box = document.getElementById('consoleLogBox');
+        if(box.innerHTML.includes('Konsol hazır')) box.innerHTML = '';
+        const item = document.createElement('div');
+        item.className = 'log-item ' + (type === 'error' ? 'error' : '');
+        item.innerText = `> ${text}`;
+        box.appendChild(item);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function clearConsole() {
+        document.getElementById('consoleLogBox').innerHTML = '<div class="log-item" style="color:var(--text-dim)">Konsol temizlendi...</div>';
+    }
+
+    // Üç dosyayı birleştirip iframe içerisinde canlı çalıştıran motor
     function liveRender() {
-        document.getElementById('previewFrame').srcdoc = editor.value;
+        projectFiles[currentFile] = editor.value;
+        
+        // Iframe içindeki js hatalarını yakalayan script enjeksiyonu
+        const consoleHookScript = `
+            <script>
+                const _log = console.log;
+                console.log = function(...args) {
+                    window.parent.postMessage({type: 'console-log', text: args.join(' ')}, '*');
+                    _log.apply(console, args);
+                };
+                window.onerror = function(msg, url, line) {
+                    window.parent.postMessage({type: 'console-error', text: msg + " (Satır: " + line + ")"}, '*');
+                    return false;
+                };
+            </script>
+        `;
+
+        let combinedSource = projectFiles.html;
+        
+        // CSS enjeksiyonu
+        const cssStyleTag = `<style>${projectFiles.css}</style>`;
+        if(combinedSource.includes('</head>')) {
+            combinedSource = combinedSource.replace('</head>', cssStyleTag + '</head>');
+        } else {
+            combinedSource = cssStyleTag + combinedSource;
+        }
+
+        // Konsol dinleyici ve JS enjeksiyonu
+        const jsScriptTag = consoleHookScript + `<script>${projectFiles.js}<\\/script>`;
+        if(combinedSource.includes('</body>')) {
+            combinedSource = combinedSource.replace('</body>', jsScriptTag + '</body>');
+        } else {
+            combinedSource = combinedSource + jsScriptTag;
+        }
+
+        document.getElementById('previewFrame').srcdoc = combinedSource;
     }
 
     async function askRealAI() {
@@ -184,174 +281,75 @@ IDE_INTERFACE = """<!DOCTYPE html>
         const aiResult = document.getElementById('aiResult');
 
         if(!prompt) { alert("Lütfen bir talep girin!"); return; }
-        aiResult.innerText = "Yapay zeka çalışıyor...";
+        aiResult.innerText = "Yapay zeka tüm mimariyi (HTML, CSS, JS) sıfırdan tasarlıyor... (Lütfen bekleyin)";
 
         try {
             const response = await fetch('/api/ask-ai', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: prompt, current_code: editor.value })
+                body: JSON.stringify({ prompt: prompt })
             });
             const data = await response.json();
             
             if(data.status === "success") {
-                aiResult.innerText = "Kod güncellendi!";
-                editor.value = data.updated_code;
+                aiResult.innerText = "Yapay zeka kodları üretti ve tüm dosyalar güncellendi!";
+                
+                // Gelen verileri sisteme dağıtıyoruz
+                projectFiles.html = data.html;
+                projectFiles.css = data.css;
+                projectFiles.js = data.js;
+                
+                editor.value = projectFiles[currentFile];
                 updateLineNumbers();
-                autoSaveCode();
+                localStorage.setItem('clouddev_ultimate_project', JSON.stringify(projectFiles));
+                liveRender();
             } else {
                 aiResult.innerText = "Hata: " + data.message;
             }
         } catch (e) {
-            aiResult.innerText = "Bağlantı hatası.";
+            aiResult.innerText = "Yapay zeka sunucusu yanıt vermedi.";
         }
     }
 
     const templates = {
-        portfolio: '<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #090a0f; color: #f3f4f6; font-family: sans-serif; padding: 50px 20px; text-align: center; }\\n.container { max-width: 600px; margin: auto; background: #121420; padding: 30px; border-radius: 20px; border: 1px solid #1f2937; }\\nh1 { color: #38bdf8; }\\n</style>\\n</head>\\n<body>\\n<div class="container">\\n  <h1>Arda Ceyhan</h1>\\n  <p>Full Stack Cloud Developer</p>\\n</div>\\n</body>\\n</html>',
-        ecommerce: '<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }\\n.card { background: white; padding: 24px; border-radius: 20px; width: 280px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }\\nbutton { background: #0f172a; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; }\\n</style>\\n</head>\\n<body>\\n  <div class="card">\\n    <h3>Cosmic Pro Kulaklık</h3>\\n    <p style="color:#10b981; font-weight:bold;">3.499 TL</p>\\n    <button>Sepete Ekle</button>\\n  </div>\\n</body>\\n</html>',
-        landing: '<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #030712; color: white; font-family: sans-serif; text-align: center; padding: 120px 20px 0; margin: 0; height: 100vh; background-image: radial-gradient(circle at top, #1e1b4b 0%, #030712 70%); }\\n.btn { background: linear-gradient(to right, #38bdf8, #a855f7); color: white; padding: 16px 32px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; }\\n</style>\\n</head>\\n<body>\\n  <h1>Merkeziyetsiz Geleceğe Adım Atın</h1>\\n  <br><br>\\n  <button class="btn">Ekosistemi Keşfet</button>\\n</body>\\n</html>',
-        dashboard: '<!DOCTYPE html>\\n<html>\\n<head>\\n<style>\\nbody { background: #0f172a; color: white; font-family: sans-serif; margin: 0; display: flex; height: 100vh; }\\n.main { flex: 1; padding: 24px; }\\n.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }\\n.stat { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }\\n.num { font-size: 24px; font-weight: bold; color: #38bdf8; }\\n</style>\\n</head>\\n<body>\\n<div class="main">\\n  <h2>Yönetim Paneli</h2>\\n  <div class="grid">\\n    <div class="stat"><div>Aktif Kullanıcı</div><div class="num">1,420</div></div>\\n    <div class="stat"><div>Aylık Ciro</div><div class="num">$12,850</div></div>\\n  </div>\\n</div>\\n</body>\\n</html>'
+        portfolio: {
+            html: '<!DOCTYPE html>\\n<html>\\n<head><link rel="stylesheet" href="style.css"></head>\\n<body>\\n  <div class="box">\\n    <h1>Arda Ceyhan</h1>\\n    <p>Full Stack Cloud Developer</p>\\n  </div>\\n</body>\\n</html>',
+            css: 'body { background: #0b0c10; color: #66fcf1; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }\\n.box { border: 2px solid #45f3ff; padding: 40px; border-radius: 10px; text-align: center; background: #1f2833; }',
+            js: ''
+        },
+        ecommerce: {
+            html: '<!DOCTYPE html>\\n<html>\\n<head><link rel="stylesheet" href="style.css"></head>\\n<body>\\n  <div class="card">\\n    <h3>Cosmic Headset</h3>\\n    <p class="price">4,500 TL</p>\\n    <button onclick="buy()">Satın Al</button>\\n  </div>\\n  <script src="script.js"><\\/script>\\n</body>\\n</html>',
+            css: 'body { background: #f1f5f9; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin:0; }\\n.card { background: white; padding: 20px; border-radius: 12px; border:1px solid #e2e8f0; text-align:center; }\\n.price { color: #10b981; font-weight:bold; }\\nbutton { background:#0f172a; color:white; border:none; padding:10px 20px; border-radius:6px; cursor:pointer; }',
+            js: 'function buy() { console.log("Ürün sepete eklendi!"); alert("Sepete Ekleme Başarılı!"); }'
+        },
+        landing: {
+            html: '<!DOCTYPE html>\\n<html>\\n<head><link rel="stylesheet" href="style.css"></head>\\n<body>\\n  <h1>Geleceğin DeFi Dünyası</h1>\\n  <button>Cüzdanı Bağla</button>\\n</body>\\n</html>',
+            css: 'body { background: #030712; color: white; font-family: sans-serif; text-align: center; padding-top: 150px; }\\nbutton { background: linear-gradient(to right, #38bdf8, #a855f7); color:white; border:none; padding:14px 28px; border-radius:50px; font-weight:bold; }',
+            js: ''
+        },
+        dashboard: {
+            html: '<!DOCTYPE html>\\n<html>\\n<head><link rel="stylesheet" href="style.css"></head>\\n<body>\\n  <h2>Yönetim Paneli</h2>\\n  <div class="metrics">\\n    <div class="m">Kullanıcı: 2.8K</div>\\n    <div class="m">Ciro: $42K</div>\\n  </div>\\n</body>\\n</html>',
+            css: 'body { background: #0f172a; color: white; font-family: sans-serif; padding: 20px; }\\n.metrics { display: flex; gap: 10px; margin-top:20px; }\\n.m { background: #1e293b; padding: 15px; border-radius: 8px; flex: 1; border: 1px solid #334155; }',
+            js: ''
+        }
     };
 
     function loadTemplate(key) {
-        if(confirm("Yazmakta olduğunuz kodlar silinecek. Devam edilsin mi?")) {
-            editor.value = templates[key];
+        if(confirm("Yazmakta olduğunuz tüm dosyalar sıfırlanacak. Onaylıyor musunuz?")) {
+            projectFiles.html = templates[key].html;
+            projectFiles.css = templates[key].css;
+            projectFiles.js = templates[key].js;
+            editor.value = projectFiles[currentFile];
             updateLineNumbers();
-            autoSaveCode();
+            localStorage.setItem('clouddev_ultimate_project', JSON.stringify(projectFiles));
             switchTab('editor-tab');
         }
     }
 
-    async function pushToGithub() {
-        const code = editor.value;
+    async function pushToGithubAll() {
         const token = document.getElementById('githubToken').value;
         const repo = document.getElementById('repoName').value;
         if(!token || !repo) { alert("Lütfen boş alanları doldurun!"); return; }
 
-        const response = await fetch('/api/github-push', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ code: code, token: token, repo: repo })
-        });
-        const data = await response.json();
-        alert(data.message);
-    }
-</script>
-</body>
-</html>"""
+        projectFiles[currentFile] = editor.value;
 
-@app.route('/')
-def index():
-    return render_template_string(IDE_INTERFACE)
-
-@app.route('/api/ask-ai', methods=['POST'])
-def ask_ai():
-    data = request.json
-    user_prompt = data.get('prompt', '')
-    current_code = data.get('current_code', '')
-    
-    try:
-        prompt_lower = user_prompt.lower()
-        
-        if "hacker" in prompt_lower or "matrix" in prompt_lower:
-            updated_code = """<!DOCTYPE html>
-<html>
-<head>
-<style>
-  body { background: black; color: #00ff00; font-family: monospace; padding: 20px; }
-  .console { border: 1px solid #00ff00; padding: 20px; background: #050505; }
-</style>
-</head>
-<body>
-  <div class="console">
-    <h2>> Kök Erişimi Sağlandı...</h2>
-    <p>> Yapay zeka tüm kod bloklarını yeniden inşa etti._</p>
-  </div>
-</body>
-</html>"""
-        elif "müzik" in prompt_lower or "music" in prompt_lower or "çalar" in prompt_lower:
-            updated_code = """<!DOCTYPE html>
-<html>
-<head>
-<style>
-  body { background: #0d0e15; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-  .card { background: #181a26; padding: 30px; border-radius: 24px; width: 280px; text-align: center; border: 1px solid #25283b; }
-  .btn { background: #f43f5e; color: white; border: none; padding: 14px 28px; border-radius: 50px; font-weight: bold; cursor: pointer; }
-</style>
-</head>
-<body>
-  <div class="card">
-    <h3>Cosmic Pulse</h3>
-    <button class="btn">▶ Oynat</button>
-  </div>
-</body>
-</html>"""
-        elif "futbol" in prompt_lower or "skor" in prompt_lower:
-            updated_code = """<!DOCTYPE html>
-<html>
-<head>
-<style>
-  body { background: #141517; color: white; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; }
-  .scoreboard { background: #202225; border-radius: 16px; padding: 24px; width: 320px; border: 1px solid #2f3136; }
-  .score { background: #000; padding: 10px 18px; border-radius: 8px; color: #ffcc00; font-weight: bold; }
-</style>
-</head>
-<body>
-  <div class="scoreboard">
-    <h4 style="text-align:center;">CANLI SKOR</h4>
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-      <span>TEAM A</span>
-      <span class="score">2 - 1</span>
-      <span>TEAM B</span>
-    </div>
-  </div>
-</body>
-</html>"""
-        else:
-            updated_code = current_code + f"\\n"
-
-        return jsonify({
-            "status": "success",
-            "updated_code": updated_code
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-@app.route('/api/github-push', methods=['POST'])
-def github_push():
-    data = request.json
-    user_code = data.get('code')
-    token = data.get('token')
-    repo_name = data.get('repo')
-    
-    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
-    try:
-        user_res = requests.get("https://api.github.com/user", headers=headers)
-        if user_res.status_code != 200:
-            return jsonify({"status": "error", "message": "GitHub Token geçersiz!"})
-            
-        username = user_res.json()['login']
-        repo_data = {"name": repo_name, "private": False, "auto_init": True}
-        requests.post("https://api.github.com/user/repos", headers=headers, json=repo_data)
-
-        file_url = f"https://api.github.com/repos/{username}/{repo_name}/contents/index.html"
-        get_file = requests.get(file_url, headers=headers)
-        sha = ""
-        if get_file.status_code == 200:
-            sha = get_file.json()['sha']
-
-        encoded_code = base64.b64encode(user_code.encode('utf-8')).decode('utf-8')
-        push_data = {"message": "CloudDev Cosmic v6.2 Deploy", "content": encoded_code}
-        if sha: push_data["sha"] = sha
-            
-        push_res = requests.put(file_url, headers=headers, json=push_data)
-        if push_res.status_code in [200, 201]:
-            return jsonify({"status": "success", "message": "Projeniz başarıyla güncellendi!"})
-        return jsonify({"status": "error", "message": "Yükleme hatası."})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
-    
