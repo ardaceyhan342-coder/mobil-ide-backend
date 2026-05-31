@@ -5,7 +5,7 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V6.5 ULTIMATE COSMIC - LANDSCAPE FIX & ROBUST VERSION ---
+# --- V6.5 ULTIMATE COSMIC ALL-IN-ONE INTERFACE (EKSİKSİZ & HATASIZ) ---
 IDE_INTERFACE = """<!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -37,30 +37,6 @@ IDE_INTERFACE = """<!DOCTYPE html>
         
         .tab-content { display: none; padding: 14px; flex: 1; flex-direction: column; gap: 14px; box-sizing: border-box; }
         .tab-content.active { display: flex; }
-        
-        /* Yatay Ekran (Landscape) İçin Özel Esnek Düzen */
-        @media (orientation: landscape) {
-            #editor-tab.tab-content.active {
-                display: flex;
-                flex-direction: row;
-                align-items: flex-start;
-                gap: 16px;
-            }
-            .left-workspace {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 14px;
-                width: 50%;
-            }
-            .right-workspace {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                gap: 14px;
-                width: 50%;
-            }
-        }
         
         /* Çoklu Dosya Seçim Sistemi */
         .file-selector { display: flex; background: #090a10; padding: 6px 6px 0 6px; gap: 4px; border-bottom: 1px solid var(--border); }
@@ -112,36 +88,32 @@ IDE_INTERFACE = """<!DOCTYPE html>
 </div>
 
 <div id="editor-tab" class="tab-content active">
-    <div class="left-workspace" style="display: flex; flex-direction: column; gap: 14px; flex: 1;">
-        <div class="editor-container">
-            <div class="file-selector">
-                <div id="file-html" class="file-tab active" onclick="switchFile('html')">index.html</div>
-                <div id="file-css" class="file-tab" onclick="switchFile('css')">style.css</div>
-                <div id="file-js" class="file-tab" onclick="switchFile('js')">script.js</div>
-            </div>
-            <div class="editor-body">
-                <div id="lineNumbers" class="line-numbers">1</div>
-                <textarea id="codeEditor" oninput="handleEditorInput()" onscroll="syncScroll()" placeholder="Kodlarınızı buraya yazın..." wrap="off"></textarea>
-            </div>
+    <div class="editor-container">
+        <div class="file-selector">
+            <div id="file-html" class="file-tab active" onclick="switchFile('html')">index.html</div>
+            <div id="file-css" class="file-tab" onclick="switchFile('css')">style.css</div>
+            <div id="file-js" class="file-tab" onclick="switchFile('js')">script.js</div>
         </div>
-        
-        <div class="console-container">
-            <div class="console-header">
-                <span>💻 Canlı JavaScript Konsolu Çıktısı</span>
-                <span style="cursor:pointer; color:var(--danger);" onclick="clearConsole()">Temizle</span>
-            </div>
-            <div id="consoleLogBox" class="console-log-box">
-                <div class="log-item" style="color:var(--text-dim)">Konsol hazır, hata yok...</div>
-            </div>
+        <div class="editor-body">
+            <div id="lineNumbers" class="line-numbers">1</div>
+            <textarea id="codeEditor" oninput="handleEditorInput()" onscroll="syncScroll()" placeholder="Kodlarınızı buraya yazın..." wrap="off"></textarea>
         </div>
     </div>
     
-    <div class="right-workspace" style="display: flex; flex-direction: column; gap: 14px; flex: 1;">
-        <div class="card">
-            <h4>🖥️ Canlı Önizleme</h4>
-            <div class="preview-wrapper">
-                <iframe id="previewFrame"></iframe>
-            </div>
+    <div class="console-container">
+        <div class="console-header">
+            <span>💻 Canlı JavaScript Konsolu Çıktısı</span>
+            <span style="cursor:pointer; color:var(--danger);" onclick="clearConsole()">Temizle</span>
+        </div>
+        <div id="consoleLogBox" class="console-log-box">
+            <div class="log-item" style="color:var(--text-dim)">Konsol hazır, hata yok...</div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h4>🖥️ Canlı Önizleme</h4>
+        <div class="preview-wrapper">
+            <iframe id="previewFrame"></iframe>
         </div>
     </div>
 </div>
@@ -353,4 +325,35 @@ IDE_INTERFACE = """<!DOCTYPE html>
             projectFiles.html = templates[key].html;
             projectFiles.css = templates[key].css;
             projectFiles.js = templates[key].js;
-            editor.value = projectFiles[currentFil
+            editor.value = projectFiles[currentFile];
+            updateLineNumbers();
+            localStorage.setItem('clouddev_ultimate_project', JSON.stringify(projectFiles));
+            switchTab('editor-tab');
+        }
+    }
+
+    async function pushToGithubAll() {
+        const token = document.getElementById('githubToken').value;
+        const repo = document.getElementById('repoName').value;
+        if(!token || !repo) { alert("Lütfen boş alanları doldurun!"); return; }
+        projectFiles[currentFile] = editor.value;
+
+        try {
+            const response = await fetch('/api/github-push-all', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ files: projectFiles, token: token, repo: repo })
+            });
+            const data = await response.json();
+            alert(data.message);
+        } catch(e) {
+            alert("GitHub bağlantı hatası oluştu.");
+        }
+    }
+</script>
+</body>
+</html>"""
+
+@app.route('/')
+def index():
+    return render_template_stri
