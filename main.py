@@ -5,14 +5,14 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V7 CLEAN COSMIC PRODUCTION INTERFACE (KORUNDU & DEĞİŞTİRİLMEDİ) ---
+# --- V9 CLEAN COSMIC PRODUCTION INTERFACE ---
 IDE_INTERFACE = """
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloudDev Studio v7 Cosmic Pro</title>
+    <title>CloudDev Studio v9 Cosmic Pro</title>
     <style>
         :root {
             --bg-main: #08090c;
@@ -62,13 +62,18 @@ IDE_INTERFACE = """
         .ai-box { background: #05060a; border-left: 4px solid var(--accent-ai); padding: 14px; border-radius: 8px; font-size: 13px; color: #cbd5e1; white-space: pre-wrap; max-height: 200px; overflow-y: auto; font-family: monospace; }
         .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .save-indicator { font-size: 11px; color: var(--success); font-weight: 600; display: none; }
+        
+        .actions-row { display: flex; gap: 10px; }
     </style>
 </head>
 <body>
 
 <header>
-    <h3>✨ CloudDev Cosmic v7 Pro</h3>
-    <button onclick="liveRender()">⚡ Çalıştır</button>
+    <h3>✨ CloudDev Cosmic v9</h3>
+    <div class="actions-row">
+        <button class="btn-secondary" onclick="downloadCode()">📥 İndir</button>
+        <button onclick="liveRender()">⚡ Çalıştır</button>
+    </div>
 </header>
 
 <div class="tab-bar">
@@ -138,7 +143,7 @@ IDE_INTERFACE = """
         if(savedCode) {
             editor.value = savedCode;
         } else {
-            editor.value = "<!DOCTYPE html>\\n<html lang=\\"tr\\">\\n<head>\\n<style>\\n  body { background: #0a0b10; color: white; font-family: sans-serif; text-align: center; padding-top: 100px; }\\n  .welcome { padding: 30px; background: #11131c; border-radius: 16px; border: 1px solid #1e293b; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }\\n  h1 { color: #38bdf8; }\\n</style>\\n</head>\\n<body>\\n  <div class=\\"welcome\\">\\n    <h1>🌌 CloudDev Cosmic v7 Pro</h1>\\n    <p>Kodlarınızı yazın veya Sınırsız AI motoruyla hayalinizdeki siteyi inşa edin.</p>\\n  </div>\\n</body>\\n</html>";
+            editor.value = "<!DOCTYPE html>\\n<html lang=\\"tr\\">\\n<head>\\n<style>\\n  body { background: #0a0b10; color: white; font-family: sans-serif; text-align: center; padding-top: 100px; }\\n  .welcome { padding: 30px; background: #11131c; border-radius: 16px; border: 1px solid #1e293b; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }\\n  h1 { color: #38bdf8; }\\n</style>\\n</head>\\n<body>\\n  <div class=\\"welcome\\">\\n    <h1>🌌 CloudDev Cosmic v9 Pro</h1>\\n    <p>Kodlarınızı yazın veya Sınırsız AI motoruyla hayalinizdeki siteyi inşa edin.</p>\\n  </div>\\n</body>\\n</html>";
         }
         updateLineNumbers();
         liveRender();
@@ -183,7 +188,22 @@ IDE_INTERFACE = """
     }
 
     function liveRender() {
-        document.getElementById('previewFrame').srcdoc = editor.value;
+        try {
+            document.getElementById('previewFrame').srcdoc = editor.value;
+        } catch(err) {
+            console.log("Önizleme yükleme hatası izole edildi.");
+        }
+    }
+
+    function downloadCode() {
+        const code = editor.value;
+        const blob = new Blob([code], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'index.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     async function askRealAI() {
@@ -250,8 +270,6 @@ IDE_INTERFACE = """
 </html>
 """
 
-# --- BACKEND LINKLERI & KONTROLLER (GERÇEK AI MOTORU BAĞLANDI) ---
-
 @app.route('/')
 def index():
     return render_template_string(IDE_INTERFACE)
@@ -262,17 +280,16 @@ def ask_ai():
     user_prompt = data.get('prompt', '')
     current_code = data.get('current_code', '')
     
-    # Gerçek zamanlı kod üretimi için Hugging Face entegrasyonu
     API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-7B-Instruct"
     
     system_instruction = (
-        "Sen gelişmiş bir HTML/CSS frontend uzmanısın. Kullanıcının mevcut kodunu bozmadan "
-        "istediği yeni özellikleri, tasarımları veya script mantığını entegre et. "
-        "Asla markdown sembolleri (```html) veya konuşma metni kullanma. Sadece doğrudan işlenebilir saf HTML/CSS/JS kodunu bütün olarak döndür."
+        "Sen gelişmiş bir frontend mimarısın. Sana verilen HTML/CSS/JS bütünleşik kod yapısını bozmadan, "
+        "kullanıcının isteği doğrultusunda kodu baştan aşağı geliştir veya yeni özellikler enjekte et. "
+        "Yanıtında asla markdown sembolleri (```html) veya hiçbir açıklama/konuşma metni kullanma. Doğrudan tarayıcının çalıştırabileceği saf tek parça kodu döndür."
     )
     
     payload = {
-        "inputs": f"<|im_start|>system\n{system_instruction}<|im_end|>\n<|im_start|>user\nMevcut Kodum:\n{current_code}\n\nİstek: {user_prompt}<|im_end|>\n<|im_start|>assistant\n",
+        "inputs": f"<|im_start|>system\n{system_instruction}<|im_end|>\n<|im_start|>user\nMevcut Kod:\n{current_code}\n\nYapılacak Değişiklik/İstek: {user_prompt}<|im_end|>\n<|im_start|>assistant\n",
         "parameters": {"max_new_tokens": 1800, "temperature": 0.3}
     }
     
@@ -280,12 +297,15 @@ def ask_ai():
         res = requests.post(API_URL, json=payload, timeout=25)
         if res.status_code == 200:
             raw_text = res.json()[0]['generated_text']
-            # Modelin ürettiği saf kodu filtrele
             updated_code = raw_text.split("<|im_start|>assistant\n")[-1].strip() if "<|im_start|>assistant\n" in raw_text else raw_text
             
-            # Markdown kalıntıları varsa temizle
-            for clean_term in ["```html", "```css", "```javascript", "```js", "```"]:
+            # V9 Gelişmiş Filtreleme Katmanı: Markdown ve metinsel kirlilikleri kazı
+            for clean_term in ["```html", "```css", "```javascript", "```js", "```", "<|im_end|>"]:
                 updated_code = updated_code.replace(clean_term, "")
+            
+            # Eğer model yanlışlıkla baştan açıklama metni eklediyse ve DOCTYPE aşağı kaydıysa temizle
+            if "<!DOCTYPE html>" in updated_code:
+                updated_code = updated_code[updated_code.find("<!DOCTYPE html>"):]
                 
             return jsonify({
                 "status": "success",
@@ -293,7 +313,7 @@ def ask_ai():
             })
         return jsonify({"status": "error", "message": f"AI Servis Hatası (Kod: {res.status_code})"})
     except requests.exceptions.Timeout:
-        return jsonify({"status": "error", "message": "Zaman aşımı oluştu. Lütfen tekrar deneyin."})
+        return jsonify({"status": "error", "message": "Zaman aşımı oluştu."})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
@@ -324,16 +344,9 @@ def github_push():
             sha = get_file.json()['sha']
 
         encoded_code = base64.b64encode(user_code.encode('utf-8')).decode('utf-8')
-        push_data = {"message": "CloudDev Cosmic v7 Pro Deploy", "content": encoded_code}
+        push_data = {"message": "CloudDev Cosmic v9 Deploy", "content": encoded_code}
         if sha: push_data["sha"] = sha
             
         push_res = requests.put(file_url, headers=headers, json=push_data, timeout=15)
         if push_res.status_code in [200, 201]:
-            return jsonify({"status": "success", "message": "Projeniz başarıyla güncellendi!"})
-        return jsonify({"status": "error", "message": "Yükleme hatası gerçekleşti."})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
-    
+            return jsonify({"status": "success
