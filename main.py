@@ -5,14 +5,14 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V9 CLEAN COSMIC PRODUCTION INTERFACE ---
+# --- V10 ULTIMATE COSMIC PRODUCTION INTERFACE ---
 IDE_INTERFACE = """
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloudDev Studio v9 Cosmic Pro</title>
+    <title>CloudDev Studio v10 Cosmic Ultimate</title>
     <style>
         :root {
             --bg-main: #08090c;
@@ -24,9 +24,34 @@ IDE_INTERFACE = """
             --border: #1e293b;
             --success: #4ade80;
         }
-        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg-main); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; }
+        
+        /* Cyberpunk Theme */
+        body.theme-cyberpunk {
+            --bg-main: #0f051d;
+            --bg-panel: #1a0b2e;
+            --accent: #ff007f;
+            --accent-ai: #00ffff;
+            --text: #ffffff;
+            --text-dim: #9d4edd;
+            --border: #3c1670;
+            --success: #39ff14;
+        }
+        
+        /* Matrix Theme */
+        body.theme-matrix {
+            --bg-main: #000000;
+            --bg-panel: #0d0d0d;
+            --accent: #00ff41;
+            --accent-ai: #008f11;
+            --text: #00ff41;
+            --text-dim: #005c0c;
+            --border: #00ff41;
+            --success: #ffffff;
+        }
+
+        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg-main); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; transition: background 0.3s, color 0.3s; }
         header { background: var(--bg-panel); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); box-shadow: 0 4px 30px rgba(0,0,0,0.4); }
-        header h3 { margin: 0; font-size: 16px; font-weight: 800; background: linear-gradient(to right, #38bdf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        header h3 { margin: 0; font-size: 16px; font-weight: 800; background: linear-gradient(to right, var(--accent), var(--accent-ai)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
         .tab-bar { display: flex; background: #0b0c12; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
         .tab-bar::-webkit-scrollbar { display: none; }
@@ -37,12 +62,14 @@ IDE_INTERFACE = """
         .tab-content { display: none; padding: 16px; flex: 1; flex-direction: column; gap: 16px; box-sizing: border-box; }
         .tab-content.active { display: flex; }
         
-        .editor-container { background: #0d0f17; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .editor-container { background: #0d0f17; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
         .editor-header { background: #161926; padding: 10px 16px; font-size: 12px; color: var(--text-dim); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         
-        .editor-body { display: flex; height: 380px; font-family: monospace; font-size: 14px; line-height: 1.6; background: #0d0f17; }
-        .line-numbers { padding: 16px 8px; text-align: right; background: #0a0b10; color: #334155; user-select: none; min-width: 35px; border-right: 1px solid #141724; overflow-y: hidden; white-space: pre; box-sizing: border-box; }
+        .editor-body { display: flex; height: 380px; font-family: monospace; font-size: 14px; line-height: 1.6; background: #0d0f17; position: relative; }
+        .line-numbers { padding: 16px 8px; text-align: right; background: #0a0b10; color: #334155; user-select: none; min-width: 45px; border-right: 1px solid #141724; overflow: hidden; white-space: pre; box-sizing: border-box; }
         textarea { flex: 1; background: transparent; color: #e2e8f0; border: none; padding: 16px; box-sizing: border-box; resize: none; outline: none; height: 100%; overflow-y: auto; white-space: pre; font-family: monospace; }
+        
+        .editor-footer { background: #161926; padding: 6px 16px; font-size: 11px; color: var(--text-dim); border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 14px; }
         
         .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
         .card h4 { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
@@ -64,13 +91,19 @@ IDE_INTERFACE = """
         .save-indicator { font-size: 11px; color: var(--success); font-weight: 600; display: none; }
         
         .actions-row { display: flex; gap: 10px; }
+        select { background: #1e2235; color: var(--text); border: 1px solid var(--border); padding: 10px; border-radius: 8px; font-size: 12px; font-weight: 600; outline: none; cursor: pointer; }
     </style>
 </head>
-<body>
+<body class="theme-cosmic">
 
 <header>
-    <h3>✨ CloudDev Cosmic v9</h3>
+    <h3>✨ CloudDev Cosmic v10 Pro</h3>
     <div class="actions-row">
+        <select id="themeSelect" onchange="changeTheme()">
+            <option value="theme-cosmic">🌌 Cosmic</option>
+            <option value="theme-cyberpunk">🔮 Cyberpunk</option>
+            <option value="theme-matrix">📟 Matrix</option>
+        </select>
         <button class="btn-secondary" onclick="downloadCode()">📥 İndir</button>
         <button onclick="liveRender()">⚡ Çalıştır</button>
     </div>
@@ -91,7 +124,12 @@ IDE_INTERFACE = """
         </div>
         <div class="editor-body">
             <div id="lineNumbers" class="line-numbers">1</div>
-            <textarea id="codeEditor" oninput="handleEditorInput()" onscroll="syncScroll()" placeholder="Kodlarınızı buraya yazın..."></textarea>
+            <textarea id="codeEditor" oninput="handleEditorInput()" onscroll="syncScroll()" placeholder="Kodlarınızı buraya yazın..." wrap="off"></textarea>
+        </div>
+        <div class="editor-footer">
+            <span id="charCount">Karakter: 0</span>
+            <span id="lineCount">Satır: 1</span>
+            <span id="sizeCount">Boyut: 0.00 KB</span>
         </div>
     </div>
     
@@ -150,7 +188,7 @@ IDE_INTERFACE = """
 </head>
 <body>
   <div class="welcome">
-    <h1>🌌 CloudDev Cosmic v9 Pro</h1>
+    <h1>🌌 CloudDev Cosmic v10 Pro</h1>
     <p>Kodlarınızı yazın veya Sınırsız AI motoruyla hayalinizdeki siteyi inşa edin.</p>
   </div>
 </body>
@@ -158,27 +196,52 @@ IDE_INTERFACE = """
 
     window.onload = function() {
         const savedCode = localStorage.getItem('clouddev_v6_code');
+        const savedTheme = localStorage.getItem('clouddev_theme') || 'theme-cosmic';
+        
+        document.body.className = savedTheme;
+        document.getElementById('themeSelect').value = savedTheme;
+
         if(savedCode) {
             editor.value = savedCode;
         } else {
             editor.value = defaultCode;
         }
         updateLineNumbers();
+        updateMetrics();
         liveRender();
     }
 
     function handleEditorInput() {
         updateLineNumbers();
+        updateMetrics();
         autoSaveCode();
     }
 
+    function changeTheme() {
+        const selectedTheme = document.getElementById('themeSelect').value;
+        document.body.className = selectedTheme;
+        localStorage.setItem('clouddev_theme', selectedTheme);
+    }
+
     function updateLineNumbers() {
-        const lines = editor.value.split('\\n').length;
+        const lines = editor.value.split('\\n');
         let numString = '';
-        for (let i = 1; i <= lines; i++) {
+        for (let i = 1; i <= lines.length; i++) {
             numString += i + '\\n';
         }
         lineNumbers.textContent = numString;
+    }
+
+    function updateMetrics() {
+        const text = editor.value;
+        const totalLines = text.split('\\n').length;
+        const totalChars = text.length;
+        const byteSize = new Blob([text]).size;
+        const kbSize = (byteSize / 1024).toFixed(2);
+
+        document.getElementById('charCount').textContent = `Karakter: ${totalChars}`;
+        document.getElementById('lineCount').textContent = `Satır: ${totalLines}`;
+        document.getElementById('sizeCount').textContent = `Boyut: ${kbSize} KB`;
     }
 
     function syncScroll() {
@@ -202,7 +265,7 @@ IDE_INTERFACE = """
         if(tabId === 'ai-tab') document.getElementById('btn-ai').classList.add('active');
         if(tabId === 'git-tab') document.getElementById('btn-git').classList.add('active');
         
-        if(tabId === 'editor-tab') { liveRender(); setTimeout(updateLineNumbers, 50); }
+        if(tabId === 'editor-tab') { liveRender(); setTimeout(() => { updateLineNumbers(); syncScroll(); }, 50); }
     }
 
     function liveRender() {
@@ -243,6 +306,7 @@ IDE_INTERFACE = """
                 aiResult.innerText = "Yapay zeka kodu başarıyla enjekte etti!";
                 editor.value = data.updated_code;
                 updateLineNumbers();
+                updateMetrics();
                 autoSaveCode();
                 liveRender();
             } else {
@@ -322,5 +386,64 @@ body { background: #0f172a; color: white; font-family: sans-serif; margin: 0; di
   <h2>Yönetim Paneli</h2>
   <div class="grid">
     <div class="stat"><div>Aktif Kullanıcı</div><div class="num">1,420</div></div>
-    <div class="stat"><div>A
+    <div class="stat"><div>Aylık Ciro</div><div class="num">$12,850</div></div>
+  </div>
+</div>
+</body>
+</html>`
+    };
+
+    function loadTemplate(key) {
+        if(confirm("Yazmakta olduğunuz kodlar silinecek. Devam edilsin mi?")) {
+            editor.value = templates[key];
+            updateLineNumbers();
+            updateMetrics();
+            autoSaveCode();
+            switchTab('editor-tab');
+        }
+    }
+
+    async function pushToGithub() {
+        const code = editor.value;
+        const token = document.getElementById('githubToken').value;
+        const repo = document.getElementById('repoName').value;
+        if(!token || !repo) { alert("Lütfen boş alanları doldurun!"); return; }
+
+        const response = await fetch('/api/github-push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: code, token: token, repo: repo })
+        });
+        const data = await response.json();
+        alert(data.message);
+    }
+</script>
+</body>
+</html>
+"""
+
+@app.route('/')
+def index():
+    return render_template_string(IDE_INTERFACE)
+
+@app.route('/api/ask-ai', methods=['POST'])
+def ask_ai():
+    data = request.json or {}
+    user_prompt = data.get('prompt', '')
+    current_code = data.get('current_code', '')
     
+    API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-7B-Instruct"
+    
+    system_instruction = (
+        "Sen gelişmiş bir frontend mimarısın. Sana verilen HTML/CSS/JS bütünleşik kod yapısını bozmadan, "
+        "kullanıcının isteği doğrultusunda kodu baştan aşağı geliştir veya yeni özellikler enjekte et. "
+        "Yanıtında asla markdown sembolleri (```html) veya hiçbir açıklama/konuşma metni kullanma. Doğrudan tarayıcının çalıştırabileceği saf tek parça kodu döndür."
+    )
+    
+    payload = {
+        "inputs": f"<|im_start|>system\n{system_instruction}<|im_end|>\n<|im_start|>user\nMevcut Kod:\n{current_code}\n\nYapılacak Değişiklik/İstek: {user_prompt}<|im_end|>\n<|im_start|>assistant\n",
+        "parameters": {"max_new_tokens": 1800, "temperature": 0.3}
+    }
+    
+    try:
+        res = req
