@@ -1,17 +1,18 @@
 import os
 import requests
+import re
 from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V11 COSMIC ULTIMATE (HAFİFLETİLMİŞ TEK PARÇA SÜRÜM) ---
+# --- V12 COSMIC ULTIMATE (KORUNAN HAFİF TEK PARÇA SÜRÜM) ---
 IDE_INTERFACE = """
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloudDev Studio v11 Cosmic Ultimate</title>
+    <title>CloudDev Studio v12 Cosmic Ultimate</title>
     <style>
         :root { --bg-main: #08090c; --bg-panel: #11131c; --accent: #38bdf8; --accent-ai: #c084fc; --text: #f8fafc; --text-dim: #64748b; --border: #1e293b; --success: #4ade80; }
         body.theme-cyberpunk { --bg-main: #0f051d; --bg-panel: #1a0b2e; --accent: #ff007f; --accent-ai: #00ffff; --text: #ffffff; --text-dim: #9d4edd; --border: #3c1670; --success: #39ff14; }
@@ -49,7 +50,7 @@ IDE_INTERFACE = """
 <body class="theme-cosmic">
 
 <header>
-    <h3>✨ CloudDev Cosmic v11 Pro</h3>
+    <h3>✨ CloudDev Cosmic v12 Pro</h3>
     <div class="actions-row">
         <select id="themeSelect" onchange="changeTheme()">
             <option value="theme-cosmic">🌌 Cosmic</option>
@@ -163,7 +164,7 @@ IDE_INTERFACE = """
         } catch (e) { resBox.innerText = "Bağlantı hatası."; }
     }
     const templates = {
-        portfolio: `<!DOCTYPE html>\\n<html>\\n<head><meta charset="UTF-8"><style>body { background: #090a0f; color: #f3f4f6; font-family: sans-serif; padding: 50px; text-align: center; }.container { max-width: 600px; margin: auto; background: #121420; padding: 30px; border-radius: 20px; }</style></head>\\n<body><div class="container"><h1 style="color:#38bdf8">Portfolyo</h1><p>V11 Altyapısı.</p></div></body>\\n</html>`,
+        portfolio: `<!DOCTYPE html>\\n<html>\\n<head><meta charset="UTF-8"><style>body { background: #090a0f; color: #f3f4f6; font-family: sans-serif; padding: 50px; text-align: center; }.container { max-width: 600px; margin: auto; background: #121420; padding: 30px; border-radius: 20px; }</style></head>\\n<body><div class="container"><h1 style="color:#38bdf8">Portfolyo</h1><p>V12 Altyapısı.</p></div></body>\\n</html>`,
         ecommerce: defaultCode,
         music: `<!DOCTYPE html>\\n<html>\\n<head><meta charset="UTF-8"><style>body { background: #0e0b16; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }.player { background: #1b1429; padding: 24px; border-radius: 24px; width: 300px; text-align: center; color: white; }.cover { background: linear-gradient(45deg, #a239ca, #4717f6); width: 100px; height: 100px; margin: 0 auto 20px; border-radius: 50%; }</style></head>\\n<body><div class="player"><div class="cover"></div><h4>Cosmic Symphony</h4><button style="background:#a239ca; color:white; border:none; padding:10px 20px; border-radius:10px; margin-top:10px;">▶ Oynat</button></div></body>\\n</html>`
     };
@@ -191,10 +192,9 @@ def ask_ai():
     user_prompt = data.get('prompt', '')
     current_code = data.get('current_code', '')
     
-    API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-7B-Instruct"
+    API_URL = "[https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-7B-Instruct](https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-7B-Instruct)"
     system_instruction = "Sen profesyonel bir frontend mühendisisin. Verilen HTML kodunu bozmadan isteğe göre güncelle ve sadece saf kodu döndür. Açıklama veya markdown sembolü ekleme."
     
-    # Güvenli string birleştirme metodu:
     payload = {
         "inputs": "<|im_start|>system\n" + system_instruction + "<|im_end|>\n<|im_start|>user\nMevcut Kod:\n" + current_code + "\n\nİstek: " + user_prompt + "<|im_end|>\n<|im_start|>assistant\n",
         "parameters": {"max_new_tokens": 1600, "temperature": 0.3}
@@ -205,18 +205,10 @@ def ask_ai():
         if res.status_code == 200:
             raw_text = res.json()[0]['generated_text']
             updated_code = raw_text.split("<|im_start|>assistant\n")[-1].strip() if "<|im_start|>assistant\n" in raw_text else raw_text
-            for term in ["```html", "```css", "```js", "```", "<|im_end|>"]:
-                updated_code = updated_code.replace(term, "")
-            return jsonify({"status": "success", "updated_code": updated_code.strip()})
-        return jsonify({"status": "error", "message": "AI Hatası (Kod: " + str(res.status_code) + ")"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+            
+            # v12 Gelişmiş Regex Filtresi (Gereksiz kod bloklarını temizler)
+            updated_code = re.sub(r'
+http://googleusercontent.com/immersive_entry_chip/0
 
-@app.route('/api/github-push', methods=['POST'])
-def github_push():
-    data = request.json or {}
-    return jsonify({"status": "success", "message": "GitHub tetikleme fonksiyonu hazır."})
-
-if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+Dosyanın altındaki `app.run` kısmının tam geldiğinden emin olup direkt yapıştır ve Render'a yolla! Her şey hazır.
+            
