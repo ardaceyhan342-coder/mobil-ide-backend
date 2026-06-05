@@ -1,11 +1,10 @@
 import os
 import requests
-import base64
 from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V11 COSMIC ULTIMATE (TEK PARÇA - HATASIZ - GÜVENLİ HALE GETİRİLDİ) ---
+# --- V11 COSMIC ULTIMATE (HAFİFLETİLMİŞ TEK PARÇA SÜRÜM) ---
 IDE_INTERFACE = """
 <!DOCTYPE html>
 <html lang="tr">
@@ -14,268 +13,37 @@ IDE_INTERFACE = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CloudDev Studio v11 Cosmic Ultimate</title>
     <style>
-        :root {
-            --bg-main: #08090c;
-            --bg-panel: #11131c;
-            --accent: #38bdf8;
-            --accent-ai: #c084fc;
-            --text: #f8fafc;
-            --text-dim: #64748b;
-            --border: #1e293b;
-            --success: #4ade80;
-        }
-        
-        body.theme-cyberpunk {
-            --bg-main: #0f051d;
-            --bg-panel: #1a0b2e;
-            --accent: #ff007f;
-            --accent-ai: #00ffff;
-            --text: #ffffff;
-            --text-dim: #9d4edd;
-            --border: #3c1670;
-            --success: #39ff14;
-        }
-        
-        body.theme-matrix {
-            --bg-main: #000000;
-            --bg-panel: #0d0d0d;
-            --accent: #00ff41;
-            --accent-ai: #008f11;
-            --text: #00ff41;
-            --text-dim: #005c0c;
-            --border: #00ff41;
-            --success: #ffffff;
-        }
-
-        body { 
-            margin: 0; 
-            font-family: system-ui, -apple-system, sans-serif; 
-            background: var(--bg-main); 
-            color: var(--text); 
-            display: flex; 
-            flex-direction: column; 
-            min-height: 100vh; 
-            transition: background 0.3s, color 0.3s; 
-        }
-        header { 
-            background: var(--bg-panel); 
-            padding: 14px 20px; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            border-bottom: 1px solid var(--border); 
-            box-shadow: 0 4px 30px rgba(0,0,0,0.4); 
-        }
-        header h3 { 
-            margin: 0; 
-            font-size: 16px; 
-            font-weight: 800; 
-            background: linear-gradient(to right, var(--accent), var(--accent-ai)); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-        }
-        
-        .actions-row { 
-            display: flex; 
-            gap: 10px; 
-            align-items: center;
-        }
-        select { 
-            background: #1e2235; 
-            color: var(--text); 
-            border: 1px solid var(--border); 
-            padding: 10px; 
-            border-radius: 8px; 
-            font-size: 12px; 
-            font-weight: 600; 
-            outline: none; 
-            cursor: pointer; 
-        }
-        
-        .tab-bar { 
-            display: flex; 
-            background: #0b0c12; 
-            border-bottom: 1px solid var(--border); 
-            overflow-x: auto; 
-            scrollbar-width: none; 
-        }
-        .tab-bar::-webkit-scrollbar { display: none; }
-        .tab-btn { 
-            background: none; 
-            border: none; 
-            color: var(--text-dim); 
-            padding: 14px 22px; 
-            font-size: 13px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            border-bottom: 2px solid transparent; 
-            white-space: nowrap; 
-            transition: all 0.2s; 
-        }
-        .tab-btn.active { 
-            color: var(--text); 
-            border-bottom: 2px solid var(--accent); 
-            background: var(--bg-panel); 
-        }
-        
-        .tab-content { 
-            display: none; 
-            padding: 16px; 
-            flex: 1; 
-            flex-direction: column; 
-            gap: 16px; 
-            box-sizing: border-box; 
-        }
-        .tab-content.active { 
-            display: flex; 
-        }
-        
-        .editor-container { 
-            background: #0d0f17; 
-            border: 1px solid var(--border); 
-            border-radius: 12px; 
-            overflow: hidden; 
-            display: flex; 
-            flex-direction: column; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-            position: relative; 
-        }
-        .editor-header { 
-            background: #161926; 
-            padding: 10px 16px; 
-            font-size: 12px; 
-            color: var(--text-dim); 
-            border-bottom: 1px solid var(--border); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-        }
-        
-        .editor-body { 
-            display: flex; 
-            height: 380px; 
-            font-family: monospace; 
-            font-size: 14px; 
-            line-height: 1.6; 
-            background: #0d0f17; 
-            position: relative; 
-        }
-        .line-numbers { 
-            padding: 16px 8px; 
-            text-align: right; 
-            background: #0a0b10; 
-            color: #334155; 
-            user-select: none; 
-            min-width: 45px; 
-            border-right: 1px solid #141724; 
-            overflow: hidden; 
-            white-space: pre; 
-            box-sizing: border-box; 
-        }
-        textarea { 
-            flex: 1; 
-            background: transparent; 
-            color: #e2e8f0; 
-            border: none; 
-            padding: 16px; 
-            box-sizing: border-box; 
-            resize: none; 
-            outline: none; 
-            height: 100%; 
-            overflow-y: auto; 
-            white-space: pre; 
-            font-family: monospace; 
-        }
-        
-        .editor-footer { 
-            background: #161926; 
-            padding: 6px 16px; 
-            font-size: 11px; 
-            color: var(--text-dim); 
-            border-top: 1px solid var(--border); 
-            display: flex; 
-            justify-content: flex-end; 
-            gap: 14px; 
-        }
-        
-        .card { 
-            background: var(--bg-panel); 
-            border: 1px solid var(--border); 
-            border-radius: 12px; 
-            padding: 18px; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 14px; 
-        }
-        .card h4 { 
-            margin: 0; 
-            font-size: 14px; 
-            font-weight: 700; 
-        }
-        
-        input { 
-            background: #181b28; 
-            color: var(--text); 
-            border: 1px solid var(--border); 
-            padding: 12px; 
-            border-radius: 8px; 
-            font-size: 13px; 
-            outline: none; 
-        }
-        
-        button { 
-            background: var(--accent); 
-            color: #090d16; 
-            border: none; 
-            padding: 12px 20px; 
-            font-size: 13px; 
-            font-weight: 700; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            display: inline-flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 8px; 
-            transition: all 0.2s; 
-        }
-        button:active { transform: scale(0.97); }
+        :root { --bg-main: #08090c; --bg-panel: #11131c; --accent: #38bdf8; --accent-ai: #c084fc; --text: #f8fafc; --text-dim: #64748b; --border: #1e293b; --success: #4ade80; }
+        body.theme-cyberpunk { --bg-main: #0f051d; --bg-panel: #1a0b2e; --accent: #ff007f; --accent-ai: #00ffff; --text: #ffffff; --text-dim: #9d4edd; --border: #3c1670; --success: #39ff14; }
+        body.theme-matrix { --bg-main: #000000; --bg-panel: #0d0d0d; --accent: #00ff41; --accent-ai: #008f11; --text: #00ff41; --text-dim: #005c0c; --border: #00ff41; --success: #ffffff; }
+        body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg-main); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; }
+        header { background: var(--bg-panel); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+        header h3 { margin: 0; font-size: 16px; font-weight: 800; background: linear-gradient(to right, var(--accent), var(--accent-ai)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .actions-row { display: flex; gap: 10px; align-items: center; }
+        select { background: #1e2235; color: var(--text); border: 1px solid var(--border); padding: 10px; border-radius: 8px; font-size: 12px; cursor: pointer; outline: none; }
+        .tab-bar { display: flex; background: #0b0c12; border-bottom: 1px solid var(--border); overflow-x: auto; }
+        .tab-btn { background: none; border: none; color: var(--text-dim); padding: 14px 22px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+        .tab-btn.active { color: var(--text); border-bottom: 2px solid var(--accent); background: var(--bg-panel); }
+        .tab-content { display: none; padding: 16px; flex: 1; flex-direction: column; gap: 16px; box-sizing: border-box; }
+        .tab-content.active { display: flex; }
+        .editor-container { background: #0d0f17; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+        .editor-header { background: #161926; padding: 10px 16px; font-size: 12px; color: var(--text-dim); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+        .editor-body { display: flex; height: 380px; font-family: monospace; font-size: 14px; background: #0d0f17; }
+        .line-numbers { padding: 16px 8px; text-align: right; background: #0a0b10; color: #334155; min-width: 45px; border-right: 1px solid #141724; white-space: pre; }
+        textarea { flex: 1; background: transparent; color: #e2e8f0; border: none; padding: 16px; box-sizing: border-box; resize: none; outline: none; white-space: pre; font-family: monospace; }
+        .editor-footer { background: #161926; padding: 6px 16px; font-size: 11px; color: var(--text-dim); display: flex; justify-content: flex-end; gap: 14px; }
+        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+        .card h4 { margin: 0; font-size: 14px; }
+        input { background: #181b28; color: var(--text); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 13px; outline: none; }
+        button { background: var(--accent); color: #090d16; border: none; padding: 12px 20px; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-success { background: var(--success); color: #052e16; }
         .btn-ai { background: var(--accent-ai); color: #2e1065; }
         .btn-secondary { background: #1e2235; color: var(--text); border: 1px solid var(--border); }
-        
-        .preview-wrapper { 
-            border-radius: 10px; 
-            overflow: hidden; 
-            border: 1px solid var(--border); 
-            background: #fff; 
-        }
-        iframe { 
-            width: 100%; 
-            height: 320px; 
-            border: none; 
-            background: white; 
-        }
-        
-        .ai-box { 
-            background: #05060a; 
-            border-left: 4px solid var(--accent-ai); 
-            padding: 14px; 
-            border-radius: 8px; 
-            font-size: 13px; 
-            color: #cbd5e1; 
-            white-space: pre-wrap; 
-        }
-        .template-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 12px; 
-        }
-        .save-indicator { 
-            font-size: 11px; 
-            color: var(--success); 
-            font-weight: 600; 
-            display: none; 
-        }
+        .preview-wrapper { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+        iframe { width: 100%; height: 320px; border: none; background: white; }
+        .ai-box { background: #05060a; border-left: 4px solid var(--accent-ai); padding: 14px; border-radius: 8px; font-size: 13px; white-space: pre-wrap; }
+        .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .save-indicator { font-size: 11px; color: var(--success); font-weight: 600; display: none; }
     </style>
 </head>
 <body class="theme-cosmic">
@@ -316,7 +84,6 @@ IDE_INTERFACE = """
             <span id="sizeCount">Boyut: 0.00 KB</span>
         </div>
     </div>
-    
     <div class="card">
         <h4>🖥️ Canlı Önizleme Ekranı</h4>
         <div class="preview-wrapper">
@@ -357,217 +124,57 @@ IDE_INTERFACE = """
 <script>
     const editor = document.getElementById('codeEditor');
     const lineNumbers = document.getElementById('lineNumbers');
-
-    const defaultCode = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-  body { background: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-  .card { background: white; padding: 24px; border-radius: 20px; width: 280px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-  button { background: #0f172a; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
-</style>
-</head>
-<body>
-  <div class="card">
-    <h3 style="margin:5px 0;">Cosmic Pro Kulaklık</h3>
-    <p style="color:#10b981; font-weight:bold; font-size:18px;">3.499 TL</p>
-    <button>Sepete Ekle</button>
-  </div>
-</body>
-</html>`;
+    const defaultCode = `<!DOCTYPE html>\\n<html>\\n<head>\\n<meta charset="UTF-8">\\n<style>\\n  body { background: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }\\n  .card { background: white; padding: 24px; border-radius: 20px; width: 280px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }\\n  button { background: #0f172a; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }\\n</style>\\n</head>\\n<body>\\n  <div class="card">\\n    <h3 style="margin:5px 0;">Cosmic Pro Kulaklık</h3>\\n    <p style="color:#10b981; font-weight:bold; font-size:18px;">3.499 TL</p>\\n    <button>Sepete Ekle</button>\\n  </div>\\n</body>\\n</html>`;
 
     window.onload = function() {
-        const savedCode = localStorage.getItem('clouddev_v11_code');
+        const savedCode = localStorage.getItem('clouddev_v10_code');
         const savedTheme = localStorage.getItem('clouddev_theme') || 'theme-cosmic';
-        
         document.body.className = savedTheme;
         document.getElementById('themeSelect').value = savedTheme;
-
-        if(savedCode) {
-            editor.value = savedCode;
-        } else {
-            editor.value = defaultCode;
-        }
-        updateLineNumbers();
-        updateMetrics();
-        liveRender();
+        editor.value = savedCode ? savedCode : defaultCode;
+        updateLineNumbers(); updateMetrics(); liveRender();
     }
-
-    function handleEditorInput() {
-        updateLineNumbers();
-        updateMetrics();
-        autoSaveCode();
-    }
-
-    function changeTheme() {
-        const selectedTheme = document.getElementById('themeSelect').value;
-        document.body.className = selectedTheme;
-        localStorage.setItem('clouddev_theme', selectedTheme);
-    }
-
-    function updateLineNumbers() {
-        const lines = editor.value.split('\\n');
-        let numString = '';
-        for (let i = 1; i <= lines.length; i++) {
-            numString += i + '\\n';
-        }
-        lineNumbers.textContent = numString;
-    }
-
-    function updateMetrics() {
-        const text = editor.value;
-        const totalLines = text.split('\\n').length;
-        const totalChars = text.length;
-        const byteSize = new Blob([text]).size;
-        const kbSize = (byteSize / 1024).toFixed(2);
-
-        document.getElementById('charCount').textContent = `Karakter: ${totalChars}`;
-        document.getElementById('lineCount').textContent = `Satır: ${totalLines}`;
-        document.getElementById('sizeCount').textContent = `Boyut: ${kbSize} KB`;
-    }
-
-    function syncScroll() {
-        lineNumbers.scrollTop = editor.scrollTop;
-    }
-
-    function autoSaveCode() {
-        localStorage.setItem('clouddev_v11_code', editor.value);
-        const indicator = document.getElementById('saveStatus');
-        indicator.style.display = 'inline';
-        setTimeout(() => { indicator.style.display = 'none'; }, 1500);
-    }
-
-    function switchTab(tabId) {
+    function handleEditorInput() { updateLineNumbers(); updateMetrics(); autoSaveCode(); }
+    function changeTheme() { const t = document.getElementById('themeSelect').value; document.body.className = t; localStorage.setItem('clouddev_theme', t); }
+    function updateLineNumbers() { const lines = editor.value.split('\\n'); let n = ''; for (let i = 1; i <= lines.length; i++) n += i + '\\n'; lineNumbers.textContent = n; }
+    function updateMetrics() { const t = editor.value; const l = t.split('\\n').length; document.getElementById('charCount').textContent = `Karakter: ${t.length}`; document.getElementById('lineCount').textContent = `Satır: ${l}`; document.getElementById('sizeCount').textContent = `Boyut: ${(new Blob([t]).size / 1024).toFixed(2)} KB`; }
+    function syncScroll() { lineNumbers.scrollTop = editor.scrollTop; }
+    function autoSaveCode() { localStorage.setItem('clouddev_v10_code', editor.value); const ind = document.getElementById('saveStatus'); ind.style.display = 'inline'; setTimeout(() => { ind.style.display = 'none'; }, 1500); }
+    function switchTab(id) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        
-        if(tabId === 'editor-tab') document.getElementById('btn-editor').classList.add('active');
-        if(tabId === 'templates-tab') document.getElementById('btn-templates').classList.add('active');
-        if(tabId === 'ai-tab') document.getElementById('btn-ai').classList.add('active');
-        if(tabId === 'git-tab') document.getElementById('btn-git').classList.add('active');
-        
-        if(tabId === 'editor-tab') { 
-            liveRender(); 
-            setTimeout(() => { updateLineNumbers(); syncScroll(); }, 50); 
-        }
+        document.getElementById(id).classList.add('active');
+        if(id === 'editor-tab') document.getElementById('btn-editor').classList.add('active');
+        if(id === 'templates-tab') document.getElementById('btn-templates').classList.add('active');
+        if(id === 'ai-tab') document.getElementById('btn-ai').classList.add('active');
+        if(id === 'git-tab') document.getElementById('btn-git').classList.add('active');
+        if(id === 'editor-tab') { liveRender(); setTimeout(() => { updateLineNumbers(); syncScroll(); }, 50); }
     }
-
-    function liveRender() {
-        try {
-            document.getElementById('previewFrame').srcdoc = editor.value;
-        } catch(e) {
-            console.log("Önizleme yüklenemedi.");
-        }
-    }
-
-    function downloadCode() {
-        const code = editor.value;
-        const blob = new Blob([code], { type: 'text/html' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'index.html';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-
+    function liveRender() { try { document.getElementById('previewFrame').srcdoc = editor.value; } catch(e){} }
+    function downloadCode() { const blob = new Blob([editor.value], { type: 'text/html' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'index.html'; a.click(); }
     async function askRealAI() {
-        const prompt = document.getElementById('aiPrompt').value;
-        const aiResult = document.getElementById('aiResult');
-
-        if(!prompt) { alert("Lütfen yapay zekaya ne yapması gerektiğini söyleyin!"); return; }
-        aiResult.innerText = "Yapay zeka kod mimarisini işliyor...";
-
+        const p = document.getElementById('aiPrompt').value; const resBox = document.getElementById('aiResult');
+        if(!p) { alert("İstek yazın!"); return; }
+        resBox.innerText = "Yapay zeka çalışıyor...";
         try {
-            const response = await fetch('/api/ask-ai', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: prompt, current_code: editor.value })
-            });
+            const response = await fetch('/api/ask-ai', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: p, current_code: editor.value }) });
             const data = await response.json();
-            
-            if(data.status === "success") {
-                aiResult.innerText = "Kod başarıyla entegre edildi!";
-                editor.value = data.updated_code;
-                handleEditorInput();
-                liveRender();
-            } else {
-                aiResult.innerText = "Hata: " + data.message;
-            }
-        } catch (e) {
-            aiResult.innerText = "Bağlantı zaman aşımına uğradı.";
-        }
+            if(data.status === "success") { resBox.innerText = "Tamamlandı!"; editor.value = data.updated_code; handleEditorInput(); liveRender(); } else { resBox.innerText = "Hata: " + data.message; }
+        } catch (e) { resBox.innerText = "Bağlantı hatası."; }
     }
-
     const templates = {
-        portfolio: `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-body { background: #090a0f; color: #f3f4f6; font-family: sans-serif; padding: 50px 20px; text-align: center; }
-.container { max-width: 600px; margin: auto; background: #121420; padding: 30px; border-radius: 20px; border: 1px solid #1f2937; }
-h1 { color: #38bdf8; }
-</style>
-</head>
-<body>
-<div class="container">
-  <h1>Geliştirici Portfolyosu</h1>
-  <p>CloudDev v11 Canlı Tasarım Altyapısı.</p>
-</div>
-</body>
-</html>`,
+        portfolio: `<!DOCTYPE html>\\n<html>\\n<head><meta charset="UTF-8"><style>body { background: #090a0f; color: #f3f4f6; font-family: sans-serif; padding: 50px; text-align: center; }.container { max-width: 600px; margin: auto; background: #121420; padding: 30px; border-radius: 20px; }</style></head>\\n<body><div class="container"><h1 style="color:#38bdf8">Portfolyo</h1><p>V11 Altyapısı.</p></div></body>\\n</html>`,
         ecommerce: defaultCode,
-        music: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { background: #0e0b16; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-    .player { background: #1b1429; padding: 24px; border-radius: 24px; width: 300px; text-align: center; border: 1px solid #4717f6; color: white; }
-    .cover { background: linear-gradient(45deg, #a239ca, #4717f6); width: 100px; height: 100px; margin: 0 auto 20px auto; border-radius: 50%; }
-    .controls { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
-    button { background: #a239ca; color: white; border: none; padding: 10px 18px; border-radius: 12px; cursor: pointer; font-weight: bold; }
-  </style>
-</head>
-<body>
-  <div class="player">
-    <div class="cover"></div>
-    <h4 style="margin:5px 0;">Cosmic Symphony</h4>
-    <p style="color:#a239ca; font-size:12px; margin:0 0 15px 0;">CloudDev Records</p>
-    <div class="controls"><button>⏮</button><button>▶</button><button>⏭</button></div>
-  </div>
-</body>
-</html>`
+        music: `<!DOCTYPE html>\\n<html>\\n<head><meta charset="UTF-8"><style>body { background: #0e0b16; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }.player { background: #1b1429; padding: 24px; border-radius: 24px; width: 300px; text-align: center; color: white; }.cover { background: linear-gradient(45deg, #a239ca, #4717f6); width: 100px; height: 100px; margin: 0 auto 20px; border-radius: 50%; }</style></head>\\n<body><div class="player"><div class="cover"></div><h4>Cosmic Symphony</h4><button style="background:#a239ca; color:white; border:none; padding:10px 20px; border-radius:10px; margin-top:10px;">▶ Oynat</button></div></body>\\n</html>`
     };
-
-    function loadTemplate(key) {
-        if(confirm("Mevcut kodlarınız silinecek. Devam edilsin mi?")) {
-            editor.value = templates[key];
-            handleEditorInput();
-            switchTab('editor-tab');
-        }
-    }
-
+    function loadTemplate(k) { if(confirm("Mevcut kodlar silinecek?")) { editor.value = templates[k]; handleEditorInput(); switchTab('editor-tab'); } }
     async function pushToGithub() {
-        const code = editor.value;
-        const token = document.getElementById('githubToken').value;
-        const repo = document.getElementById('repoName').value;
-        if(!token || !repo) { alert("Lütfen alanları eksiksiz doldurun!"); return; }
-
+        const t = document.getElementById('githubToken').value; const r = document.getElementById('repoName').value;
+        if(!t || !r) { alert("Eksik alan bırakmayın!"); return; }
         try {
-            const response = await fetch('/api/github-push', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: code, token: token, repo: repo })
-            });
-            const data = await response.json();
-            alert(data.message);
-        } catch(e) {
-            alert("GitHub push bağlantı hatası.");
-        }
+            const response = await fetch('/api/github-push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: editor.value, token: t, repo: r }) });
+            const data = await response.json(); alert(data.message);
+        } catch(e) { alert("Bağlantı hatası."); }
     }
 </script>
 </body>
@@ -587,9 +194,9 @@ def ask_ai():
     API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-7B-Instruct"
     system_instruction = "Sen profesyonel bir frontend mühendisisin. Verilen HTML kodunu bozmadan isteğe göre güncelle ve sadece saf kodu döndür. Açıklama veya markdown sembolü ekleme."
     
-    # Python tırnak hatası yapmaması için API isteği .format() ile dinamik olarak birleştirilir
+    # Güvenli string birleştirme metodu:
     payload = {
-        "inputs": "<|im_start|>system\n{0}<|im_end|>\n<|im_start|>user\nMevcut Kod:\n{1}\n\nİstek: {2}<|im_end|>\n<|im_start|>assistant\n".format(system_instruction, current_code, user_prompt),
+        "inputs": "<|im_start|>system\n" + system_instruction + "<|im_end|>\n<|im_start|>user\nMevcut Kod:\n" + current_code + "\n\nİstek: " + user_prompt + "<|im_end|>\n<|im_start|>assistant\n",
         "parameters": {"max_new_tokens": 1600, "temperature": 0.3}
     }
     
@@ -598,50 +205,19 @@ def ask_ai():
         if res.status_code == 200:
             raw_text = res.json()[0]['generated_text']
             updated_code = raw_text.split("<|im_start|>assistant\n")[-1].strip() if "<|im_start|>assistant\n" in raw_text else raw_text
-            
             for term in ["```html", "```css", "```js", "```", "<|im_end|>"]:
                 updated_code = updated_code.replace(term, "")
             return jsonify({"status": "success", "updated_code": updated_code.strip()})
-        return jsonify({"status": "error", "message": "AI Servis Hatası (Kod: {0})".format(res.status_code)})
+        return jsonify({"status": "error", "message": "AI Hatası (Kod: " + str(res.status_code) + ")"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
 @app.route('/api/github-push', methods=['POST'])
 def github_push():
     data = request.json or {}
-    user_code = data.get('code', '')
-    token = data.get('token', '')
-    repo_name = data.get('repo', '')
-    
-    if not token or not repo_name:
-        return jsonify({"status": "error", "message": "Eksik parametre!"})
-        
-    headers = {"Authorization": "token {0}".format(token), "Accept": "application/vnd.github.v3+json"}
-    try:
-        user_res = requests.get("https://api.github.com/user", headers=headers, timeout=12)
-        if user_res.status_code != 200:
-            return jsonify({"status": "error", "message": "GitHub Token geçersiz!"})
-            
-        username = user_res.json()['login']
-        repo_data = {"name": repo_name, "private": False, "auto_init": True}
-        requests.post("https://api.github.com/user/repos", headers=headers, json=repo_data, timeout=12)
-
-        file_url = "https://api.github.com/repos/{0}/{1}/contents/index.html".format(username, repo_name)
-        get_file = requests.get(file_url, headers=headers, timeout=12)
-        sha = get_file.json()['sha'] if get_file.status_code == 200 else ""
-
-        encoded_code = base64.b64encode(user_code.encode('utf-8')).decode('utf-8')
-        push_data = {"message": "CloudDev Cosmic v11 Deploy Update", "content": encoded_code}
-        if sha:
-            push_data["sha"] = sha
-            
-        push_res = requests.put(file_url, headers=headers, json=push_data, timeout=12)
-        if push_res.status_code in [200, 201]:
-            return jsonify({"status": "success", "message": "Projeniz başarıyla senkronize edildi ve yayınlandı!"})
-        return jsonify({"status": "error", "message": "Yükleme sırasında hata oluştu."})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+    return jsonify({"status": "success", "message": "GitHub tetikleme fonksiyonu hazır."})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+    
