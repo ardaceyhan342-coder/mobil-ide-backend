@@ -5,112 +5,196 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V10 ULTIMATE COSMIC INTERFACE ---
+# --- V7 COSMIC PRO INTERFACE ---
 IDE_INTERFACE = """
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloudDev Studio v10 Cosmic Ultimate</title>
+    <title>CloudDev Cosmic v7 Pro</title>
     <style>
-        :root {
-            --bg-main: #08090c;
-            --bg-panel: #11131c;
-            --accent: #38bdf8;
-            --accent-ai: #c084fc;
-            --text: #f8fafc;
-            --text-dim: #64748b;
-            --border: #1e293b;
-            --success: #4ade80;
+        body { 
+            margin: 0; 
+            font-family: system-ui, -apple-system, sans-serif; 
+            background: #08090c; 
+            color: #f8fafc; 
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
+        }
+        header { 
+            background: #11131c; 
+            padding: 14px 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid #1e293b; 
+            box-shadow: 0 4px 30px rgba(0,0,0,0.4); 
+        }
+        header h3 { 
+            margin: 0; 
+            font-size: 16px; 
+            font-weight: 800; 
+            background: linear-gradient(to right, #38bdf8, #c084fc); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
         }
         
-        body.theme-cyberpunk {
-            --bg-main: #0f051d;
-            --bg-panel: #1a0b2e;
-            --accent: #ff007f;
-            --accent-ai: #00ffff;
-            --text: #ffffff;
-            --text-dim: #9d4edd;
-            --border: #3c1670;
-            --success: #39ff14;
+        .tab-bar { 
+            display: flex; 
+            background: #0b0c12; 
+            border-bottom: 1px solid #1e293b; 
+        }
+        .tab-btn { 
+            background: none; 
+            border: none; 
+            color: #64748b; 
+            padding: 14px 22px; 
+            font-size: 13px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            border-bottom: 2px solid transparent; 
+            transition: all 0.2s; 
+        }
+        .tab-btn.active { 
+            color: #f8fafc; 
+            border-bottom: 2px solid #38bdf8; 
+            background: #11131c; 
         }
         
-        body.theme-matrix {
-            --bg-main: #000000;
-            --bg-panel: #0d0d0d;
-            --accent: #00ff41;
-            --accent-ai: #008f11;
-            --text: #00ff41;
-            --text-dim: #005c0c;
-            --border: #00ff41;
-            --success: #ffffff;
+        .tab-content { 
+            display: none; 
+            padding: 16px; 
+            flex: 1; 
+            flex-direction: column; 
+            gap: 16px; 
+            box-sizing: border-box; 
         }
-
-        body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background: var(--bg-main); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; transition: background 0.3s, color 0.3s; }
-        header { background: var(--bg-panel); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); box-shadow: 0 4px 30px rgba(0,0,0,0.4); }
-        header h3 { margin: 0; font-size: 16px; font-weight: 800; background: linear-gradient(to right, var(--accent), var(--accent-ai)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .tab-content.active { 
+            display: flex; 
+        }
         
-        .tab-bar { display: flex; background: #0b0c12; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
-        .tab-bar::-webkit-scrollbar { display: none; }
-        .tab-btn { background: none; border: none; color: var(--text-dim); padding: 14px 22px; font-size: 13px; font-weight: 600; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; }
-        .tab-btn.active { color: var(--text); border-bottom: 2px solid var(--accent); background: var(--bg-panel); }
-        .tab-btn.ai-tab.active { border-bottom: 2px solid var(--accent-ai); }
+        .editor-container { 
+            background: #0d0f17; 
+            border: 1px solid #1e293b; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+        }
+        .editor-header { 
+            background: #161926; 
+            padding: 10px 16px; 
+            font-size: 12px; 
+            color: #64748b; 
+            border-bottom: 1px solid #1e293b; 
+        }
         
-        .tab-content { display: none; padding: 16px; flex: 1; flex-direction: column; gap: 16px; box-sizing: border-box; }
-        .tab-content.active { display: flex; }
+        .editor-body { 
+            display: flex; 
+            height: 320px; 
+            font-family: monospace; 
+            font-size: 14px; 
+            background: #0d0f17; 
+        }
+        textarea { 
+            flex: 1; 
+            background: transparent; 
+            color: #e2e8f0; 
+            border: none; 
+            padding: 16px; 
+            box-sizing: border-box; 
+            resize: none; 
+            outline: none; 
+            height: 100%; 
+            overflow-y: auto; 
+            font-family: monospace; 
+        }
         
-        .editor-container { background: #0d0f17; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative; }
-        .editor-header { background: #161926; padding: 10px 16px; font-size: 12px; color: var(--text-dim); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .card { 
+            background: #11131c; 
+            border: 1px solid #1e293b; 
+            border-radius: 12px; 
+            padding: 18px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 14px; 
+        }
+        .card h4 { 
+            margin: 0; 
+            font-size: 14px; 
+            font-weight: 700; 
+        }
         
-        .editor-body { display: flex; height: 380px; font-family: monospace; font-size: 14px; line-height: 1.6; background: #0d0f17; position: relative; }
-        .line-numbers { padding: 16px 8px; text-align: right; background: #0a0b10; color: #334155; user-select: none; min-width: 45px; border-right: 1px solid #141724; overflow: hidden; white-space: pre; box-sizing: border-box; }
-        textarea { flex: 1; background: transparent; color: #e2e8f0; border: none; padding: 16px; box-sizing: border-box; resize: none; outline: none; height: 100%; overflow-y: auto; white-space: pre; font-family: monospace; }
+        input { 
+            background: #181b28; 
+            color: #f8fafc; 
+            border: 1px solid #1e293b; 
+            padding: 12px; 
+            border-radius: 8px; 
+            font-size: 13px; 
+            outline: none; 
+        }
         
-        .editor-footer { background: #161926; padding: 6px 16px; font-size: 11px; color: var(--text-dim); border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 14px; }
+        button { 
+            background: #38bdf8; 
+            color: #090d16; 
+            border: none; 
+            padding: 12px 20px; 
+            font-size: 13px; 
+            font-weight: 700; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+        }
+        .btn-success { background: #4ade80; color: #052e16; }
+        .btn-ai { background: #c084fc; color: #2e1065; }
         
-        .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
-        .card h4 { margin: 0; font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .preview-wrapper { 
+            border-radius: 10px; 
+            overflow: hidden; 
+            border: 1px solid #1e293b; 
+            background: #fff; 
+        }
+        iframe { 
+            width: 100%; 
+            height: 300px; 
+            border: none; 
+            background: white; 
+        }
         
-        input { background: #181b28; color: var(--text); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 13px; outline: none; }
-        input:focus { border-color: var(--accent); }
-        
-        button { background: var(--accent); color: #090d16; border: none; padding: 12px 20px; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
-        button:active { transform: scale(0.97); }
-        .btn-success { background: var(--success); color: #052e16; }
-        .btn-ai { background: var(--accent-ai); color: #2e1065; }
-        .btn-secondary { background: #1e2235; color: var(--text); border: 1px solid var(--border); }
-        
-        .preview-wrapper { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #fff; }
-        iframe { width: 100%; height: 320px; border: none; background: white; }
-        
-        .ai-box { background: #05060a; border-left: 4px solid var(--accent-ai); padding: 14px; border-radius: 8px; font-size: 13px; color: #cbd5e1; white-space: pre-wrap; max-height: 200px; overflow-y: auto; font-family: monospace; }
-        .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .save-indicator { font-size: 11px; color: var(--success); font-weight: 600; display: none; }
-        
-        .actions-row { display: flex; gap: 10px; }
-        select { background: #1e2235; color: var(--text); border: 1px solid var(--border); padding: 10px; border-radius: 8px; font-size: 12px; font-weight: 600; outline: none; cursor: pointer; }
+        .ai-box { 
+            background: #05060a; 
+            border-left: 4px solid #c084fc; 
+            padding: 14px; 
+            border-radius: 8px; 
+            font-size: 13px; 
+            color: #cbd5e1; 
+            white-space: pre-wrap; 
+        }
+        .template-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+        }
     </style>
 </head>
-<body class="theme-cosmic">
+<body>
 
 <header>
-    <h3>✨ CloudDev Cosmic v10 Pro</h3>
-    <div class="actions-row">
-        <select id="themeSelect" onchange="changeTheme()">
-            <option value="theme-cosmic">🌌 Cosmic</option>
-            <option value="theme-cyberpunk">🔮 Cyberpunk</option>
-            <option value="theme-matrix">📟 Matrix</option>
-        </select>
-        <button class="btn-secondary" onclick="downloadCode()">📥 İndir</button>
-        <button onclick="liveRender()">⚡ Çalıştır</button>
-    </div>
+    <h3>✨ CloudDev Cosmic v7 Pro</h3>
+    <button onclick="liveRender()">⚡ Çalıştır</button>
 </header>
 
 <div class="tab-bar">
     <button id="btn-editor" class="tab-btn active" onclick="switchTab('editor-tab')">📝 Düzenleyici</button>
     <button id="btn-templates" class="tab-btn" onclick="switchTab('templates-tab')">🗂️ Şablonlar</button>
-    <button id="btn-ai" class="tab-btn ai-tab" onclick="switchTab('ai-tab')">🤖 Sınırsız AI Motoru</button>
+    <button id="btn-ai" class="tab-btn" onclick="switchTab('ai-tab')">🤖 Sınırsız AI Motoru</button>
     <button id="btn-git" class="tab-btn" onclick="switchTab('git-tab')">🐙 Git & Dağıtım</button>
 </div>
 
@@ -118,21 +202,14 @@ IDE_INTERFACE = """
     <div class="editor-container">
         <div class="editor-header">
             <span>index.html</span>
-            <span id="saveStatus" class="save-indicator">✓ Otomatik Kaydedildi</span>
         </div>
         <div class="editor-body">
-            <div id="lineNumbers" class="line-numbers">1</div>
-            <textarea id="codeEditor" oninput="handleEditorInput()" onscroll="syncScroll()" placeholder="Kodlarınızı buraya yazın..." wrap="off"></textarea>
-        </div>
-        <div class="editor-footer">
-            <span id="charCount">Karakter: 0</span>
-            <span id="lineCount">Satır: 1</span>
-            <span id="sizeCount">Boyut: 0.00 KB</span>
+            <textarea id="codeEditor" oninput="autoSaveCode()" placeholder="Kodlarınızı buraya yazın..."></textarea>
         </div>
     </div>
     
     <div class="card">
-        <h4><span style="color:var(--accent);">🖥️</span> Canlı Önizleme Ekranı</h4>
+        <h4>🖥️ Canlı Önizleme Ekranı</h4>
         <div class="preview-wrapper">
             <iframe id="previewFrame"></iframe>
         </div>
@@ -143,18 +220,15 @@ IDE_INTERFACE = """
     <div class="card">
         <h4>🗂️ Hazır Tasarım Altyapıları</h4>
         <div class="template-grid">
-            <button class="btn-secondary" onclick="loadTemplate('portfolio')">💼 Premium Portfolyo</button>
-            <button class="btn-secondary" onclick="loadTemplate('ecommerce')">🛒 E-Ticaret Arayüzü</button>
-            <button class="btn-secondary" onclick="loadTemplate('landing')">🚀 Kripto Sayfası</button>
-            <button class="btn-secondary" onclick="loadTemplate('dashboard')">📊 Yönetim Paneli</button>
+            <button style="background:#1e2235; color:white;" onclick="loadTemplate('portfolio')">💼 Premium Portfolyo</button>
+            <button style="background:#1e2235; color:white;" onclick="loadTemplate('ecommerce')">🛒 E-Ticaret Arayüzü</button>
         </div>
     </div>
 </div>
 
 <div id="ai-tab" class="tab-content">
-    <div class="card" style="border-color: var(--accent-ai);">
-        <h4 style="color: var(--accent-ai);">🤖 Evrensel Yapay Zeka Kod Tasarımcısı</h4>
-        <p style="color:var(--text-dim); font-size:12px; margin:0;">İstediğiniz web sayfasını, oyunu veya uygulamayı Türkçe yazın. Yapay zeka kodu güncelleyecektir.</p>
+    <div class="card">
+        <h4>🤖 Evrensel Yapay Zeka Kod Tasarımcısı</h4>
         <input type="text" id="aiPrompt" placeholder="Örn: Arka planı koyu, modern bir müzik çalar yap...">
         <button class="btn-ai" onclick="askRealAI()">✨ Kodu Yapay Zekayla Baştan Yarat</button>
         <div id="aiResult" class="ai-box">Talebiniz doğrultusunda kod üzerinde çalışmak için hazırım...</div>
@@ -166,190 +240,21 @@ IDE_INTERFACE = """
         <h4>🐙 GitHub Canlı Yayın Motoru</h4>
         <input type="text" id="githubToken" placeholder="GitHub Personal Access Token">
         <input type="text" id="repoName" placeholder="Repo Adı (Örn: harika-projem)">
-        <button class="btn-success" onclick="pushToGithubAll()">🚀 Projeyi Deploy Et</button>
+        <button class="btn-success" onclick="pushToGithub()">🚀 Projeyi Deploy Et</button>
     </div>
 </div>
 
 <script>
     const editor = document.getElementById('codeEditor');
-    const lineNumbers = document.getElementById('lineNumbers');
-    
-    // v10 Uyumlu Dosya Yönetim Sistemi
-    let projectFiles = { "index.html": "" };
-    let currentFile = "index.html";
 
     const defaultCode = `<!DOCTYPE html>
-<html lang="tr">
-<head>
-<meta charset="UTF-8">
-<style>
-  body { background: #0a0b10; color: white; font-family: sans-serif; text-align: center; padding-top: 100px; }
-  .welcome { padding: 30px; background: #11131c; border-radius: 16px; border: 1px solid #1e293b; display: inline-block; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-  h1 { color: #38bdf8; }
-</style>
-</head>
-<body>
-  <div class="welcome">
-    <h1>🌌 CloudDev Cosmic v10 Pro</h1>
-    <p>Kodlarınızı yazın veya Sınırsız AI motoruyla hayalinizdeki siteyi inşa edin.</p>
-  </div>
-</body>
-</html>`;
-
-    window.onload = function() {
-        const savedCode = localStorage.getItem('clouddev_v10_code');
-        const savedTheme = localStorage.getItem('clouddev_theme') || 'theme-cosmic';
-        
-        document.body.className = savedTheme;
-        document.getElementById('themeSelect').value = savedTheme;
-
-        if(savedCode) {
-            editor.value = savedCode;
-        } else {
-            editor.value = defaultCode;
-        }
-        projectFiles[currentFile] = editor.value;
-        updateLineNumbers();
-        updateMetrics();
-        liveRender();
-    }
-
-    function handleEditorInput() {
-        projectFiles[currentFile] = editor.value;
-        updateLineNumbers();
-        updateMetrics();
-        autoSaveCode();
-    }
-
-    function changeTheme() {
-        const selectedTheme = document.getElementById('themeSelect').value;
-        document.body.className = selectedTheme;
-        localStorage.setItem('clouddev_theme', selectedTheme);
-    }
-
-    function updateLineNumbers() {
-        const lines = editor.value.split('\\n');
-        let numString = '';
-        for (let i = 1; i <= lines.length; i++) {
-            numString += i + '\\n';
-        }
-        lineNumbers.textContent = numString;
-    }
-
-    function updateMetrics() {
-        const text = editor.value;
-        const totalLines = text.split('\\n').length;
-        const totalChars = text.length;
-        const byteSize = new Blob([text]).size;
-        const kbSize = (byteSize / 1024).toFixed(2);
-
-        document.getElementById('charCount').textContent = `Karakter: ${totalChars}`;
-        document.getElementById('lineCount').textContent = `Satır: ${totalLines}`;
-        document.getElementById('sizeCount').textContent = `Boyut: ${kbSize} KB`;
-    }
-
-    function syncScroll() {
-        lineNumbers.scrollTop = editor.scrollTop;
-    }
-
-    function autoSaveCode() {
-        localStorage.setItem('clouddev_v10_code', editor.value);
-        const indicator = document.getElementById('saveStatus');
-        indicator.style.display = 'inline';
-        setTimeout(() => { indicator.style.display = 'none'; }, 1500);
-    }
-
-    function switchTab(tabId) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById(tabId).classList.add('active');
-        
-        if(tabId === 'editor-tab') document.getElementById('btn-editor').classList.add('active');
-        if(tabId === 'templates-tab') document.getElementById('btn-templates').classList.add('active');
-        if(tabId === 'ai-tab') document.getElementById('btn-ai').classList.add('active');
-        if(tabId === 'git-tab') document.getElementById('btn-git').classList.add('active');
-        
-        if(tabId === 'editor-tab') { liveRender(); setTimeout(() => { updateLineNumbers(); syncScroll(); }, 50); }
-    }
-
-    function liveRender() {
-        try {
-            document.getElementById('previewFrame').srcdoc = editor.value;
-        } catch(err) {
-            console.log("Önizleme yükleme hatası.");
-        }
-    }
-
-    function downloadCode() {
-        const code = editor.value;
-        const blob = new Blob([code], { type: 'text/html' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = 'index.html';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-
-    async function askRealAI() {
-        const prompt = document.getElementById('aiPrompt').value;
-        const aiResult = document.getElementById('aiResult');
-
-        if(!prompt) { alert("Lütfen yapay zekaya ne yapması gerektiğini söyleyin!"); return; }
-        aiResult.innerText = "Yapay zeka tüm kod bloklarını inceliyor. Lütfen bekleyin...";
-
-        try {
-            const response = await fetch('/api/ask-ai', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: prompt, current_code: editor.value })
-            });
-            const data = await response.json();
-            
-            if(data.status === "success") {
-                aiResult.innerText = "Yapay zeka kodu başarıyla enjekte etti!";
-                editor.value = data.updated_code;
-                projectFiles[currentFile] = editor.value;
-                updateLineNumbers();
-                updateMetrics();
-                autoSaveCode();
-                liveRender();
-            } else {
-                aiResult.innerText = "Hata: " + data.message;
-            }
-        } catch (e) {
-            aiResult.innerText = "Bağlantı hatası.";
-        }
-    }
-
-    const templates = {
-        portfolio: `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <style>
-body { background: #090a0f; color: #f3f4f6; font-family: sans-serif; padding: 50px 20px; text-align: center; }
-.container { max-width: 600px; margin: auto; background: #121420; padding: 30px; border-radius: 20px; border: 1px solid #1f2937; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
-h1 { color: #38bdf8; margin-bottom: 5px; }
-.tag { color: #a855f7; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-</style>
-</head>
-<body>
-<div class="container">
-  <h1>Arda Ceyhan</h1>
-  <div class="tag">Full Stack Cloud Developer</div>
-  <p>Yapay zeka destekli mobil sistemler ve yenilikçi web mimarileri üzerine çalışan bağımsız geliştirici.</p>
-</div>
-</body>
-</html>`,
-        ecommerce: `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-body { background: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-.card { background: white; padding: 24px; border-radius: 20px; width: 280px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-button { background: #0f172a; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
+  body { background: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+  .card { background: white; padding: 24px; border-radius: 20px; width: 280px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+  button { background: #0f172a; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -359,58 +264,52 @@ button { background: #0f172a; color: white; border: none; padding: 14px; width: 
     <button>Sepete Ekle</button>
   </div>
 </body>
-</html>`,
-        landing: `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-body { background: #030712; color: white; font-family: sans-serif; text-align: center; padding: 120px 20px 0; margin: 0; height: 100vh; background-image: radial-gradient(circle at top, #1e1b4b 0%, #030712 70%); }
-.btn { background: linear-gradient(to right, #38bdf8, #a855f7); color: white; padding: 16px 32px; border-radius: 50px; border: none; font-weight: bold; font-size: 16px; cursor: pointer; }
-</style>
-</head>
-<body>
-  <h1>Merkeziyetsiz Geleceğe Adım Atın</h1>
-  <button class="btn">Ekosistemi Keşfet</button>
-</body>
-</html>`,
-        dashboard: `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-body { background: #0f172a; color: white; font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
-.main { flex: 1; padding: 24px; }
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
-.stat { background: #1e293b; padding: 20px; border-radius: 12px; border: 1px solid #334155; }
-.num { font-size: 24px; font-weight: bold; color: #38bdf8; }
-</style>
-</head>
-<body>
-<div class="main">
-  <h2>Yönetim Paneli</h2>
-  <div class="grid">
-    <div class="stat"><div>Aktif Kullanıcı</div><div class="num">1,420</div></div>
-    <div class="stat"><div>Aylık Ciro</div><div class="num">$12,850</div></div>
-  </div>
-</div>
-</body>
-</html>`
-    };
+</html>`;
 
-    function loadTemplate(key) {
-        if(confirm("Yazmakta olduğunuz kodlar silinecek. Devam edilsin mi?")) {
-            editor.value = templates[key];
-            projectFiles[currentFile] = editor.value;
-            updateLineNumbers();
-            updateMetrics();
-            autoSaveCode();
-            switchTab('editor-tab');
+    window.onload = function() {
+        const savedCode = localStorage.getItem('clouddev_v7_code');
+        if(savedCode) {
+            editor.value = savedCode;
+        } else {
+            editor.value = defaultCode;
         }
+        liveRender();
     }
 
-    async function pushToGithubAll() {
-        const token = document.getElementById('githubToken').value;
-        const repo = document.getElementById('repoName').value;
-        if(!token || !repo) { alert("Lütfen
+    function autoSaveCode() {
+        localStorage.setItem('clouddev_v7_code', editor.value);
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
         
+        if(tabId === 'editor-tab') {
+            document.getElementById('btn-editor').classList.add('active');
+            liveRender();
+        }
+        if(tabId === 'templates-tab') document.getElementById('btn-templates').classList.add('active');
+        if(tabId === 'ai-tab') document.getElementById('btn-ai').classList.add('active');
+        if(tabId === 'git-tab') document.getElementById('btn-git').classList.add('active');
+    }
+
+    function liveRender() {
+        document.getElementById('previewFrame').srcdoc = editor.value;
+    }
+
+    async function askRealAI() {
+        const prompt = document.getElementById('aiPrompt').value;
+        const aiResult = document.getElementById('aiResult');
+
+        if(!prompt) { alert("Lütfen yapay zekaya ne yapması gerektiğini söyleyin!"); return; }
+        aiResult.innerText = "Yapay zeka çalışıyor...";
+
+        try {
+            const response = await fetch('/api/ask-ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt, current_code: editor.value })
+            });
+            const data = await response
+            
