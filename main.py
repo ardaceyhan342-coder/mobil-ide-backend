@@ -1,33 +1,209 @@
 import os
 import requests
-import base64
 from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V11 COSMIC MASTERPIECE INTERFACE (RENDER SAFE ENCODED) ---
-# Kodun içerisindeki kaçış karakterleri çatışmasın diye arayüz base64 olarak paketlenmiştir.
-B64_INTERFACE = (
-    "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9InRyIj4KPGhlYWQ+CiAgICA8bWV0YSBjaGFyc2V0PSJV"
-    "VEYtOCI+CiAgICA8bWV0YSBCheckbWU9InZpZXdwb3J0IiBjb250ZW50PSJ3aWR0aD1kZXZpY2Utd2lk"
-    "dGgsIGluaXRpYWwtc2NhbGU9MS4wIj4KICAgIDx0aXRsZT5DbG91ZERldiBTdHVkaW8gdjExIENvc21p"
-    "YyBNYXN0ZXJwaWVjZTwvdGl0bGU+CiAgICA8c3R5bGU+CiAgICAgICAgOnJvb3QgewogICAgICAgICAg"
-    "ICAtLWJnLW1haW46ICMwODA5MGM7CiAgICAgICAgICAgIC0tYmctcGFuZWw6ICMxMTEzMWM7CiAgICAg"
-    "ICAgICAgIC0tYWNjZW50OiAjMzhiZGY4OwogICAgICAgICAgICAtLWFjY2VudC1haTogI2MwODRmYzsK"
-    "ICAgICAgICAgICAgLS10ZXh0OiAjZjhmYWZjOwogICAgICAgICAgICAtLXRleHQtZGltOiAjNjQ3NDhi"
-    "OwogICAgICAgICAgICAtLWJvcmRlcjogIzFlMjkzYjsKICAgICAgICAgICAgLS1zdWNjZXNzOiAjNGFk"
-    "ZTgwOwogICAgICAgIH0KICAgICAgICAKICAgICAgICBib2R5LnRoZW1lLWN5YmVycHVuayB7CiAgICAg"
-    "ICAgICAgIC0tYmctbWFpbjogIzBmMDUxZDsKICAgICAgICAgICAgLS1iZy1wYW5lbDogIzFhMGIyZTsK"
-    "ICAgICAgICAgICAgLS1hY2NlbnQ6ICNmZjAwN2Y7CiAgICAgICAgICAgIC0tYWNjZW50LWFpOiAjMDBm"
-    "ZmZmOwogICAgICAgICAgICAtLXRleHQ6ICNmZmZmZmY7CiAgICAgICAgICAgIC0tdGV4dC1kaW06ICM5"
-    "ZDRlZGQ7CiAgICAgICAgICAgIC0tYm9yZGVyOiAjM2MxNjcwOwogICAgICAgICAgICAtLXN1Y2Nlc3M6"
-    "ICMzOWZGMTQ7CiAgICAgICAgfQogICAgICAgIAogICAgICAgIGJvZHkudGhlbWUtbWF0cml4IHsKICAg"
-    "ICAgICAgICAgLS1iZy1tYWluOiAjMDAwMDAwOwogICAgICAgICAgICAtLWJnLXBhbmVsOiAjMGQwZDBk"
-    "OwogICAgICAgICAgICAtLWFjY2VudDogIzAwZmY0MTsKICAgICAgICAgICAgLS1hY2NlbnQtYWk6ICMw"
-    "MDhmMTE7CiAgICAgICAgICAgIC0tdGV4dDogIzAwZmY0MTsKICAgICAgICAgICAgLS10ZXh0..." # Güvenli paket devam ediyor...
-)
+# --- ADIM 1: ŞABLON KÜTÜPHANESİ ---
+# JavaScript içinde tırnak hatası yaratmamak için şablonları Python içinde izole ediyoruz.
+PORTFOLIO_TEMPLATE = """<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { background: #090a0f; color: #f3f4f6; font-family: sans-serif; padding: 50px 20px; text-align: center; }
+    .container { max-width: 600px; margin: auto; background: #121420; padding: 30px; border-radius: 20px; border: 1px solid #1f2937; }
+    h1 { color: #38bdf8; }
+    p { color: #9ca3af; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Geliştirici Portfolyosu</h1>
+    <p>CloudDev v11 Canlı Tasarım Mimarisi ile oluşturuldu.</p>
+  </div>
+</body>
+</html>"""
 
-# Render çökme koruması için gerçek zamanlı çözücü mimari
-try:
-    # Karakter uyumsuzluklarını aşmak için doğrudan base64 verisi üzerinden açılır
-    raw_data = "PCFET0NUWVBFIGh0bWw+CjxodG1sIGxhbmc9InRyIj4KPGhlYWQ+CiAgICA8bWV0YSBjaGFyc2V0PSJVVEYtOCI+CiAgICA8bWV0YSBuYW1lPSJ2aWV3cG9ydCIgY29udGVudD0id2lkdGg9ZGV2aWNlLXdpZHRoLCBpbml0aWFsLXNjYWxlPTEuMCI+CiAgICA8dGl0bGU+CloudDev Studio v11 Cosmic MasterpiecePC90aXRsZT4KICAgIDxzdHlsZT4KICAgICAgICA6cm9vdCB7CiAgICAgICAgICAgIC0tYmctbWFpbjogIzA4MDkwYzsKICAgICAgICAgICAgLS1iZy1wYW5lbDogIzExMTMxYzsKICAgICAgICAgICAgLS1hY2NlbnQ6ICMzOGJkZjg7CiAgICAgICAgICAgIC0tYWNjZW50LWFpOiAjYzA4NGZjOwogICAgICAgICAgICAtLXRleHQ6ICNmOGZhZmM7CiAgICAgICAgICAgIC0tdGV4dC1kaW06ICM2NDc0OGI7CiAgICAgICAgICAgIC0tYm9yZGVyOiAjMWUyOTNiOwogICAgICAgICAgICAtLXN1Y2Nlc3M6ICM0YWRlODA7CiAgICAgICAgfQogICAgICAgIAogICAgICAgIGJvZHkudGhlbWUtY3liZXJwdW5rIHsKICAgICAgICAgICAgLS1iZy1tYWluOiAjMGYwNTFkOwogICAgICAgICAgICAtLWJnLXBhbmVsOiAjMWEwYjJlOwogICAgICAgICAgICAtLWFjY2VudDogI2ZmMDA3ZjsKICAgICAgICAgICAgLS1hY2NlbnQtYWk6ICMwMGZmZmY7CiAgICAgICAgICAgIC0tdGV4dDogI2ZmZmZmZjsKICAgICAgICAgICAgLS10ZXh0LZGltOiAjOWQ0ZWRkOwogICAgICAgICAgICAtLWJvcmRlcjogIzNjMTY3MDsKICAgICAgICAgICAgLS1zdWNjZXNzOiAjMzlmZjE0OwogICAgICAgIH0KICAgICAgICAKICAgICAgICBib2R5LnRoZW1lLW1hdHJpeCB7CiAgICAgICAgICAgIC0tYmctbWFpbjogIzAwMDAwMDsKICAgICAgICAgICAgLS1iZy1wYW5lbDogIzBkMGQwZDsKICAgICAgICAgICAgLS1hY2NlbnQ6ICMwMGZmNDE7CiAgICAgICAgICAgIC0tYWNjZW50LWFpOiAjMDA4ZjExOwogICAgICAgICAgICAtLXRleHQ6ICMwMGZmNDE7CiAgICAgICAgICAgIC0tdGV4dC1kaW06ICMwMDVjMGM7CiAgICAgICAgICAgIC0tYm9yZGVyOiAjMDBmZjQxOwogICAgICAgICAgICAtLXN1Y2Nlc3M6ICNmZmZmZmY7CiAgICAgICAgfQoKICAgICAgICBib2R5IHsgCiAgICAgICAgICAgIG1hcmdpbjogMDsgCiAgICAgICAgICAgIGZvbnQtZmFtaWx5OiBzeXN0ZW0tdWksIC1hcHBsZS1zeXN0ZW0sIHNhbnMtc2VyaWY7IAogICAgICAgICAgICBiYWNrZ3JvdW5kOiB2YXIoLS1iZy1tYWluKTsgCiAgICAgICAgICAgIGNvbG9yOiB2YXIoLS10ZXh0KTsgCiAgICAgICAgICAgIGRpc3BsYXk6IGZsZXg7IAogICAgICAgICAgICBmbGV4LWRpcmVjdGlvbjogY29sdW1uOyAKICAgICAgICAgICAgbWluLWhlaWdodDogMTAwdmg7IAogICAgICAgICAgICB0cmFuc2l0aW9uOiBiYWNrZ3JvdW5kIDAuM3MsIGNvbG9yIDAuM3M7IAogICAgICAgIH0KICAgICAgICBoZWFkZXIgeyAKICAgICAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tYmctcGFuZWwpOyAKICAgICAgICAgICAgcGFkZGluZzogMTRweCAyMHB4OyAKICAgICAgICAgICAgZGlzcGxheTogZmxleDsgCiAgICAgICAgICAgIGp1c3RpZnktY29udGVudDogc3BhY2UtYmV0d2VlbjsgCiAgICAgICAgICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7IAogICAgICAgICAgICBib3JkZXItYm90dG9tOiAxcHggc29saWQgdmFyKC0tYm9yZGVyKTsgCiAgICAgICAgICAgIGJveC1zaGFkb3c6IDAgNHB4IDMwcHggcmdiYSgwLDAsMCwwLjQpOyAKICAgICAgICB9CiAgICAgICAgaGVhZGVyIGgzIHsgCiAgICAgICAgICAgIG1hcmdpbjogMDsgCiAgICAgICAgICAgIGZvbnQtc2l6ZTogMTZweDsgCiAgICAgICAgICAgIGZvbnQtd2VpZ2h0OiA4MDA7IAogICAgICAgICAgICBiYWNrZ3JvdW5kOiBsaW5lYXItZ3JhZGllbnQodG8gcmlnaHQsIHZhcigtLWFjY2VudCksIHZhcigtLWFjY2VudC1haSkpOyAKICAgICAgICAgICAgLXdlYmtpdC1iYWNrZ3JvdW5kLWNsaXA6IHRleHQ7IAogICAgICAgICAgICAtd2Via2l0LXRleHQtZmlsbC1jb2xvcjogdHJhbnNwYXJlbnQ7IAogICAgICAgIH0KICAgICAgICAKICAgICAgICAuYWN0aW9ucy1yb3cgeyAKICAgICAgICAgICAgZGlzcGxheTogZmxleDsgCiAgICAgICAgICAgIGdhcDogMTBweDsgCiAgICAgICAgICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7CiAgICAgICAgfQogICAgICAgIHNlbGVjdCB7IAogICAgICAgICAgICBiYWNrZ3JvdW5kOiAjMWUyMjM1OyAKICAgICAgICAgICAgY29sb3I6IHZhcigtLXRleHQpOyAKICAgICAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tYm9yZGVyKTsgCiAgICAgICAgICAgIHBhZGRpbmc6IDEwcHg7IAogICAgICAgICAgICBib3JkZXItcmFkaXVzOiA4cHg7IAogICAgICAgICAgICBmb250LXNpemU6IDEycHg7IAogICAgICAgICAgICBmb250LXdlaWdodDogNjAwOyAKICAgICAgICAgICAgb3V0bGluZTogbm9uZTsgCiAgICAgICAgICAgIGN1cnNvcjogcG9pbnRlcjsgCiAgICAgICB9CiAgICAgICAgCiAgICAgICAgLnRhYi1iYXIgeyAKICAgICAgICAgICAgZGlzcGxheTogZmxleDsgCiAgICAgICAgICAgIGJhY2tncm91bmQ6ICMwYjBjMTI7IAogICAgICAgICAgICBib3JkZXItYm90dG9tOiAxcHggc29saWQgdmFyKC0tYm9yZGVyKTsgCiAgICAgICAgICAgIG92ZXJmbG93LXg6IGF1dG87IAogICAgICAgICAgICBzY3JvbGxiYXYtd2lkdGg6IG5vbmU7IAogICAgICAgIH0KICAgICAgICAudGFiLWJhcjo6LXdlYmtpdC1zY3JvbGxiYXIgeyBkaXNwbGF5OiBub25lOyB9CiAgICAgICAgLnRhYi1idG4geyAKICAgICAgICAgICAgYmFja2dyb3VuZDogbm9uZTsgCiAgICAgICAgICAgIGJvcmRlcjogbm9uZTsgCiAgICAgICAgICAgIGNvbG9yOiB2YXIoLS10ZXh0LWRpbSk7IAogICAgICAgICAgICBwYWRkaW5nOiAxNHB4IDIycHg7IAogICAgICAgICAgICBmb250LXNpemU6IDEzcHg7IAogICAgICAgICAgICBmb250LXdlaWdodDogNjAwOyAKICAgICAgICAgICAgY3Vyc29yOiBwb2ludGVyOyAKICAgICAgICAgICAgYm9yZGVyLWJvdHRvbTogMnB4IHNvbGlkIHRyYW5zcGFyZW50OyAKICAgICAgICAgICAgd2hpdGUtc3BhY2U6IG5vd3JhcDsgCiAgICAgICAgICAgIHRyYW5zaXRpb246IGFsbCAwLjJzOyAKICAgICAgICB9CiAgICAgICAgLnRhYi1idG4uYWN0aXZlIHsKICAgICAgICAgICAgY29sb3I6IHZhcigtLXRleHQpOyAKICAgICAgICAgICAgYm9yZGVyLWJvdHRvbTogMnB4IHNvbGlkIHRyYW5zcGFyZW50OyAKICAgICAgICAgICAgYm9yZGVyLWJvdHRvbS1jb2xvcjogdmFyKC0tYWNjZW50KTsKICAgICAgICAgICAgYmFja2dyb3VuZDogdmFyKC0tYmctcGFuZWwpOyAKICAgICAgICB9CiAgICAgICAgCiAgICAgICAgLnRhYi1jb250ZW50IHsgCiAgICAgICAgICAgIGRpc3BsYXk6IG5vbmU7IAogICAgICAgICAgICBwYWRkaW5nOiAxNnB4OyAKICAgICAgICAgICAgZmxleDogMTsgCiAgICAgICAgICAgIGZsZXgtZGlyZWN0aW9uOiBjb2x1bW47IAogICAgICAgICAgICBnYXA6IDE2cHg7IAogICAgICAgICAgICBib3gtc2l6aW5nOiBib3JkZXItYm94OyAKICAgICAgICB9CiAgICAgICAgLnRhYi1jb250ZW50LmFjdGl2ZSB7IAogICAgICAgICAgICBkaXNwbGF5OiBmbGV4OyAKICAgICAgICB9CiAgICAgICAgCiAgICAgICAgLmVkaXRvci1jb250YWluZXIgeyAKICAgICAgICAgICAgYmFja2dyb3VuZDogIzBkMGYxNzsgCiAgICAgICAgICAgIGJvcmRlcjogMXB4IHNvbGlkIHRyYW5zcGFyZW50OyAKICAgICAgICAgICAgYm9yZGVyLWNvbG9yOiB2YXIoLS1ib3JkZXIpOyAKICAgICAgICAgICAgYm9yZGVyLXJhZGl1czogMTJweDsgCiAgICAgICAgICAgIG92ZXJmbG93OiBoaWRkZW47IAogICAgICAgICAgICBkaXNwbGF5OiBmbGV4OyAKICAgICAgICAgICAgZmxleC1kaXJlY3Rpb246IGNvbHVtbjsgCiAgICAgICAgICAgIGJveC1zaGFkb3c6IDAgMTBweCAzMHB4IHJnYmEoMCwwLDAsMC41KTsgCiAgICAgICAgICAgIHBvc2l0aW9uOiByZWxhdGl2ZTsgCiAgICAgICAgfQogICAgICAgIC5lZGl0b3ItaGVhZGVyIHsgCiAgICAgICAgICAgIGJhY2tncm91bmQ6ICMxNjE5MjY7IAogICAgICAgICAgICBwYWRkaW5nOiAxMHB4IDE2cHg7IAogICAgICAgICAgICBmb250LXNpemU6IDEycHg7IAogICAgICAgICAgICBjb2xvcjogdmFyKC0tdGV4dC1kaW0pOyAKICAgICAgICAgICAgYm9yZGVyLWJvdHRvbTogMXB4IHNvbGlkIHZhcigtLWJvcmRlcik7IAogICAgICAgICAgICBkaXNwbGF5OiBmbGV4OyAKICAgICAgICAgICAganVzdGlmeS1jb250ZW50OiBzcGFjZS1iZXR3ZWVuOyAKICAgICAgICAgICAgYWxpZ24taXRlbXM6IGNlbnRlcjsgCiAgICAgICAgfQogICAgICAgIAogICAgICAgIC5lZGl0b3ItYm9keSB7IAogICAgICAgICAgICBkaXNwbGF5OiBmbGV4OyAKICAgICAgICAgICAgaGVpZ2h0OiAzODBweDsgCiAgICAgICAgICAgIGZvbnQtZmFtaWx5OiBtb25vc3BhY2U7IAogICAgICAgICAgICBmb250LXNpemU6IDE0cHg7IAogICAgICAgICAgICBsaW5lLWhlaWdodDogMS42OyAKICAgICAgICAgICAgYmFja2dyb3VuZDogIzBkMGYxNzsgCiAgICAgICAgICAgIHBvc2l0aW9uOiByZWxhdGl2ZTsgCiAgICAgICAgfQogICAgICAgIC5saW5lLW51bWJlcnMgeyAKICAgICAgICAgICAgcGFkZGluZzogMTZweCA4cHg7IAogICAgICAgICAgICB0ZXh0LWFsaWduOiByaWdodDsgCiAgICAgICAgICAgIGJhY2tncm91bmQ6ICMwYTBiMTA7IAogICAgICAgICAgICBjb2xvcjogIzMzNDE1NTsgCiAgICAgICAgICAgIHVzZXItc2VsZWN0OiBub25lOyAKICAgICAgICAgICAgbWluLXdpZHRoOiA0NXB4OyAKICAgICAgICAgICAgYm9yZGVyLXJpZ2h0OiAxcHggc29saWQgIzE0MTcyNDsgCiAgICAgICAgICAgIG92ZXJmbG93OiBoaWRkZW47IAogICAgICAgICAgICB3aGl0ZS1zcGFjZTogcHJlOyAKICAgICAgICAgICAgYm94LXNpemluZzogYm94LXNpemluZzsgCiAgICAgICAgfQogICAgICAgIHRleHRhcmVhIHsgCiAgICAgICAgICAgIGZsZXg6IDE7IAogICAgICAgICAgICBiYWNrZ3JvdW5kOiB0cmFuc3BhcmVudDsgCiAgICAgICAgICAgIGNvbG9yOiAjZTJlOGYwOyAKICAgICAgICAgICAgYm9yZGVyOiBub25lOyAKICAgICAgICAgICAgcGFkZGluZzogMTZweDsgCiAgICAgICAgICAgIGJveC1zaGFkb3c6IG5vbmU7IAogICAgICAgICAgICByZXNpemU6IG5vbmU7IAogICAgICAgICAgICBvdXRsaW5lOiBub25lOyAKICAgICAgICAgICAgaGVpZ2h0OiAxMDAlOyAKICAgICAgICAgICAgb3ZlcmZsb3cteTogYXV0bzsgCiAgICAgICAgICAgIHdoaXRlLXNwYWNlOiBwcmU7IAogICAgICAgICAgICBmb250LWZhbWlseTogbW9ub3NwYWNlOyAKICAgICAgICB9CiAgICAgICAgCiAgICAgICAgLmVkaXRvci1mb290ZXIgeyAKICAgICAgICAgICAgYmFja2dyb3VuZDogIzE2MTkyNjsgCiAgICAgICAgICAgIHBhZGRpbmc6IDZweCAxNnB4OyAKICAgICAgICAgICAgZm9udC1zaXplOiAxMXB4OyAKICAgICAgICAgICAgY29sb3I6IHZhcigtLXRleHQtZGltKTsgCiAgICAgICAgICAgIGJvcmRlci10b3A6IDFweCBzb2xpZCB2YXIoLS1ib3JkZXIpOyAKICAgICAgICAgICAgZGlzcGxheTogZmxleDsgCiAgICAgICAgICAgIGp1c3RpZnktY29udGVudDogZmxleC1lbmQ7IAogICAgICAgICAgICBnYXA6IDE0cHg7IAogICAgICAgIH0KICAgICAgICAKICAgICAgICAuY2FyZCB7IAogICAgICAgICAgICBiYWNrZ3JvdW5kOiB2YXIoLS1iZy1wYW5lbCk7IAogICAgICAgICAgICBib3JkZXI6IDFweCBzb2xpZCB2YXIoLS1ib3JkZXIpOyAKICAgICAgICAgICAgYm9yZGVyLXJhZGl1czogMTJweDsgCiAgICAgICAgICAgIHBhZGRpbmc6IDE4cHg7IAogICAgICAgICAgICBkaXNwbGF5OiBmbGV4OyAKICAgICAgICAgICAgZmxleC1kaXJlY3Rpb246IGNvbHVtbjsgCiAgICAgICAgICAgIGdhcDogMTRweDsgCiAgICAgICAgfQogICAgICAgIC5jYXJkIGg0IHsgCiAgICAgICAgICAgIG1hcmdpbjogMDsgCiAgICAgICAgICAgIGZvbnQtc2l6ZTogMTRweDsgCiAgICAgICAgICAgIGZvbnQtd2VpZ2h0OiA3MDA7IAogICAgICAgIH0KICAgICAgICAKICAgICAgICBpbnB1dCB7IAogICAgICAgICAgICBiYWNrZ3JvdW5kOiAjMTgxYjI4OyAKICAgICAgICAgICAgY29sb3I6IHZhcigtLXRleHQpOyAKICAgICAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tYm9yZGVyKTsgCiAgICAgICAgICAgIHBhZGRpbmc6IDEycHg7IAogICAgICAgICAgICBib3JkZXItcmFkaXVzOiA4cHg7IAogICAgICAgICAgICBmb250LXNpemU6IDEzcHg7IAogICAgICAgICAgICBvdXRsaW5lOiBub25lOyAKICAgICAgICB9CiAgICAgICAgCiAgICAgICAgYnV0dG9uIHsgCiAgICAgICAgICAgIGJhY2tncm91bmQ6IHZhcigtLWFjY2VudCk7IAogICAgICAgICAgICBjb2xvcjogIzA5MGQxNjsgCiAgICAgICAgICAgIGJvcmRlcjogbm9uZTsgCiAgICAgICAgICAgIHBhZGRpbmc6IDEycHggMjBweDsgCiAgICAgICAgICAgIGZvbnQtc2l6ZTogMTNweDsgCiAgICAgICAgICAgIGZvbnQtd2VpZ2h0OiA3MDA7IAogICAgICAgICAgICBib3JkZXItcmFkaXVzOiA4cHg7IAogICAgICAgICAgICBjdXJzb3I6IHBvaW50ZXI7IAogICAgICAgICAgICBkaXNwbGF5OiBpbmxpbmUtZmxleDsgCiAgICAgICAgICAgIGFsaWduLWl0ZW1zOiBjZW50ZXI7IAogICAgICAgICAgICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjsgCiAgICAgICAgICAgIGdhcDogOHB4OyAKICAgICAgICAgICAgdHJhbnNpdGlvbjogYWxsIDAuMnM7IAogICAgICAgIH0KICAgICAgICBidXR0b246YWN0aXZlIHsgdHJhbnNmb3JtOiBzY2FsZSgwLjk3KTsgfQogICAgICAgIC5idG4tc3VjY2VzcyB7IGJhY2tncm91bmQ6IHZhcigtLXN1Y2Nlc3MpOyBjb2xvcjogIzA1MmUxNjsgfQogICAgICAgIC5idG4tYWkgeyBiYWNrZ3JvdW5kOiB2YXIoLS1hY2NlbnQtYWkpOyBjb2xvcjogIzJlMTA2NTsgfQogICAgICAgIC5idG4tc2Vjb25kYXJ5IHsgYmFja2dyb3VuZDogIzFlMjIzNTsgY29sb3I6IHZhcigtLXRleHQpOyBib3JkZXI6IDFweCBzb2xpZCB2YXIoLS1ib3JkZXIpOyB9CiAgICAgICAgCiAgICAgICAgLnByZXZpZXctd3JhcHBlciB7IAogICAgICAgICAgICBib3JkZXItcmFkaXVzOiAxMHB4OyAKICAgICAgICAgICAgb3ZlcmZsb3c6IGhpZGRlbjsgCiAgICAgICAgICAgIGJvcmRlcjogMXB4IHNvbGlkIHZhcigtLWJvcmRlcik7IAogICAgICAgICAgICBiYWNrZ3JvdW5kOiAjZmZmOyAKICAgICAgfQogICAgICAgIGlmcmFtZSB7IAogICAgICAgICAgICB3aWR0aDogMTAwJTsgCiAgICAgICAgICAgIGhlaWdodDogMzIwcHg7IAogICAgICAgICAgICBib3JkZXI6IG5vbmU7IAogICAgICAgICAgICBiYWNrZ3JvdW5kOiB3aGl0ZTsgCiAgICAgICAgfQogICAgICAgIAogICAgICAgIC5haS1ib3ggeyAKICAgICAgICAgICAgYmFja2dyb3VuZDogIzA1MDYwYTsgCiAgICAgICAgICAgIGJvcmRlci1sZWZ0OiA0cHggc29saWQgdmFyKC0tYWNjZW50LWFpKTsgCiAgICAgICAgICAgIHBhZGRpbmc6IDE0cHg7IAogICAgICAgICAgICBib3JkZXItcmFkaXVzOiA4cHg7IAogICAgICAgICAgICBmb250LXNpemU6IDEzcHg7IAogICAgICAgICAgICBjb2xvcjogI2NiZDVlMTsgCiAgICAgICAgICAgIHdoaXRlLXNwYWNlOiBwcmUtd3JhcDsgCiAgICAgICAgfQogICAgICAgIC50ZW1wbGF0ZS1ncmlkIHsgCiAgICAgICAgICAgIGRpc3BsYXk6IGdyaWQ7IAogICAgICAgICAgICBncmlkLXRlbXBsYXRlLWNvbHVtbnM6IDFmcjsgCiAgICAgICAgICAgIGdhcDogMTJweDsgCiAgICAgICAgfQogICAgICAgIEBtZWRpYShtaW4td2lkdGg6IDYwMHB4KSB7CiAgICAgICAgICAgIC50ZW1wbGF0ZS1ncmlkIHsgZ3JpZC10ZW1wbGF0ZS1jb2x1bW5zOiAxZnIgMWZyOyB9CiAgICAgICAgfQogICAgICAgIC50ZW1wbGF0ZS1pdGVtIHsKICAgICAgICAgICAgYmFja2dyb3VuZDogIzE2MTkyNjsKICAgICAgICAgICAgYm9yZGVyOiAxcHggc29saWQgdmFyKC0tYm9yZGVyKTsKICAgICAgICAgICAgYm9yZGVyLXJhZGl1czogMTBweDsKICAgICAgICAgICAgcGFkZGluZzogMTRweDsKICAgICAgICAgICAgZGlzcGxheTogZmxleDsKICAgICAgICAgICAgZmxleC1kaXJlY3Rpb246IGNvbHVtbjsKICAgICAgICAgICAgZ2FwOiAxMHB4OwpIJSBqdXN0aWZ5LWNvbnRlbnQ6IHNwYWNlLWJldHdlZW47CiAgICAgICAgfQogICAgICAgIC50ZW1wbGF0ZS1pbmZvIGg1IHsgbWFyZ2luOiAwOyBmb250LXNpemU6IDE0cHg7IGNvbG9yOiB2YXIoLS1hY2NlbnQpOyB9CiAgICAgICAgLnRlbXBsYXRlLWluZm8gcCB7IG1hcmdpbjogNHB4IDAgMCAwOyBmb250LXNpemU6IDEycHg7IGNvbG9yOiB2YXIoLS10ZXh0LWRpbSk7IH0KICAgICAgICAKICAgICAgICAuc2F2ZS1pbmRpY2F0b3IgeyAKICAgICAgICAgICAgZm9udC1zaXplOiAxMXB4OyAKICAgICAgICAgICAgY29sb3I6IHZhcigtLXN1Y2Nlc3MpOyAKICAgICAgICAgICAgZm9udC13ZWlnaHQ6IDYwMDsgCiAgICAgICAgICAgIGRpc3BsYXk6IG5vbmU7IAogICAgICAgIH0KICAgIDwvc3R5bGU+CjwvaGVhZD4KPGJvZHkgY2xhc3M9InRoZW1lLWNvc21pYyI+Cgo8aGVhZGVyPgogICAgPGgzPs2oIENsb3VkRGV2IFN0dHVkaW8gdjExIE1hc3RlcnBpZWNlPC9oMz4KICAgIDxkaXYgY2xhc3M9ImFjdGlvbnMtcm93Ij4KICAgICAgICA8c2VsZWN0IGlkPSJ0aGVtZVNlbGVjdCIgb25jaGFuZ2U9ImNoYW5nZVRoZW1lKCkiPgogICAgICAgICAgICA8b3B0aW9uIHZhbHVlPSJ0aGVtZS1jb3NtaWMiPs2MIENvc21pYzwvb3B0aW9uPgogICAgICAgICAgICA8b3B0aW9uIHZhbHVlPSJ0aGVtZS1jeWJlcnB1bmsiPs2bIEN5YmVycHVuazwvb3B0aW9uPgogICAgICAgICAgICA8b3B0aW9uIHZhbHVlPSJ0aGVtZS1tYXRyaXgiPs2gIE1hdHJpeDwvb3B0aW9uPgogICAgICAgIDwvc2VsZWN0PgogICAgICAgIDxidXR0b24gY2xhc3M9ImJ0bi1zZWNvbmRhcnkiIG9uY2xpY2s9ImRvd25sb2FkQ29kZSgpIj7TDirectuZGlyPC9idXR0b24+CiAgICAgICAgPGJ1dHRvbiBvbmNsaWNrPSJsaXZlUmVuZGVyKCkiPs2fIENhbMSxxZ90水素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qZWxlcmluaSBtb2Rlcm4gYmlyIGfDtnLDvG7DvG1sZSBzZXJnaWxlLjwvcD4KICAgICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgICAgPGJ1dHRvbiBzdHlsZT0id2lkdGg6MTAwJTsiIG9uY2xpY2s9ImxvYWRUZW1wbGF0ZSgncG9ydGZvbGlvJykiPllvwGtsZTwvYnV0dG9uPgogICAgICAgICAgICA8L2RpdivKCiAgICAgICAgICAgIDxkaXYgY2xhc3M9InRlbXBsYXRlLWl0ZW0iPgogICAgICAgICAgICAgICAgPGRpdiBjbGFzcz0idGVtcGxhdGUtaW5mbyI+CiAgICAgICAgICAgICAgICAgICAgODU+zn0gRS1UaWNhcmV0IEFyYXnDvXrDvDwvaDU+CiAgICAgICAgICAgICAgICAgICAgPHA+w5b6ZWwgZml5YXQgZXRpa2V0aSB2ZSBldGtp bGXFn2ltbGkgYnV0b25hIHNhaGlwIG1pbmltYWxpc3Qgw7NydW4ga2FydGkuPC9wPgogICAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgICA8YnV0dG9uIHN0eWxlPSJ3aWR0aDoxMDAlOyIgb25jbGljaz0ibG9hZFRlbXBsYXRlKCdlY29tbWVyY2UnKSI+WW9obGUpPC9idXR0b24+CiAgICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgICAgPGRpdiBjbGFzcz0idGVtcGxhdGUtaW5mbyI+CiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzPSJ0ZW1wbGF0ZS1pdGVtIj4KICAgICAgICAgICAgICAgICAgICA4NT7TniBLb3ptaWsgTcO8emlrIMOHYWxhcjwvaDU+CiAgICAgICAgICAgICAgICAgICAgPHA+QnV0b25sYXJpIHZlIMWfxLFrIMOnYWxtYSBsaXN0ZXNpIGFsYW7EscmxhIG1vZGVybiBiaXIgb3luYXRpY8SxIFVJIHRhc2FyaW1pLjwvcD4KICAgICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgICAgPGJ1dHRvbiBzdHlsZT0id2lkdGg6MTAwJTsiIG9uY2xpY2s9ImxvYWRUZW1wbGF0ZSgnbXVzaWMnKSI+WW9obGUpPC9idXR0b24+CiAgICAgICAgICAgIDwvZGl2PgoKICAgICAgICAgICAgPGRpdiBjbGFzcz0idGVtcGxhdGUtaW5mbyI+CiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzPSJ0ZW1wbGF0ZS1pdGVtIj4KICAgICAgICAgICAgICAgICAgICA4NT7ToSBEaW5hbWlrIEhhYmVyIFBvcnRhbDxoLzU+CiAgICAgICAgICAgICAgICAgICAgPHA+SXpnYXJhIChHcmlkKSB5YXBpc8SxbmRhLCBnw7Zyc2VsbGVyIHZlIGthdGVnb3JpbGVyIGJhcmxuZMSxygFuIGhhYmVyIGFraciPxLEuPC9wPgogICAgICAgICAgICAgICAgPC9kaXY+CiAgICAgICAgICAgICAgICA8YnV0dG9uIHN0eWxlPSJ3aWR0aDoxMDAlOyIgb25jbGljaz0ibG9hZFRlbXBsYXRlKCduZXdzJykiPllvwGtsZTwvYnV0dG9uPgogICAgICAgICAgICA8L2RpdivKCiAgICAgICAgICAgIDxkaXYgY2xhc3M9InRlbXBsYXRlLWl0ZW0iPgogICAgICAgICAgICAgICAgPGRpdiBjbGFzcz0idGVtcGxhdGUtaW5mbyI+CiAgICAgICAgICAgICAgICAgICAgODU+🌤7vuI8gTWluaW1hbCBIYXZhIER1cnVtdTwvaDU+CiAgICAgICAgICAgICAgICAgICAgPHA+Q2FtIGVmZWt0bGkgKEdsYXNzbW9ycGhpc20pLCBoYWZ0YWzEsGsgdGFobWlubGVyaSBpY2VyZW4gaGF2YSBkdXJ1bXUgYXJhewO8esO8LjwvcD4KICAgICAgICAgICAgICAgIDwvZGl2PgogICAgICAgICAgICAgICAgPGJ1dHRvbiBzdHlsZT0id2lkdGg6MTAwJTsiIG9uY2xpY2s9ImxvYWRUZW1wbGF0ZSgnd2VhdGhlcicpIj4YdWtsZTwvYnV0dG9uPgogICAgICAgICAgICA8L2RpdivKCiAgICAgICAgPC9kaXY+CiAgICA8L2Rpdj4KPC9kaXY+Cgo8ZGl2IGlkPSJhaS10YWIiIGNsYXNzPSJ0YWItY29udGVudCI+CiAgICA8ZGl2IGNsYXNzPSJjYXJkIj4KICAgICAgICA8ODQ+zsogRXZyZW5zZWwgWWFwYXkgWmVrYSBLb2QgVGFzYXLEbWNpc8SxPC9oND4KICAgICAgICA8aW5wdXQgdHlwZT0idGV4dCIgaWQ9ImFpUHJvbXB0IiBwbGFjZWhvbGRlcj0iw5ZybjogQXJrYSBwbGFuxLEga295dSwgbW9kZXJuIGJpciBtw7Z6aWsgw6dhbGFyIHlhcC4uLiI+CiAgICAgICAgPGJ1dHRvbiBjbGFzcz0iYnRuLWFpIiBvbmNsaWNrPSJhc2tSZWFsQUkoKSI+zsogS29kdSBZYXBheSBaZWtheWxhIEJhxZ90YW4gWWFyYXQ8L2J1dHRvbj4KICAgICAgICA8ZGl2IGlkPSJhaVJlc3VsdCIgY2xhc3M9ImFpLWJveCI+VGFsZWJpbml6IGRv幕cnVsdHVzdW5kYSBrb2Qgw7N6ZXJpbmRlIMOnYWzEscWfbWFrIGnDp2luIGhhemlyxLFtLi4uPC9kaXY+CiAgICA8L2Rpdj4KPC9kaXY+Cgo8ZGl2IGlkPSJnaXQtdGFiIiBjbGFzcz0idGFiLWNvbnRlbnQiPgogICAgPGRpdiBjbGFzcz0iY2FyZCI+CiAgICAgICAgPDg0Ps6pIEdpdEh1YiBDYW5ssharedheWluIE1vdG9ydTwvaDQ+CiAgICAgICAgPGlucHV0IHR5cGU9InRleHQiIGlkPSJnaXRodWJUb2tlbiIgcGxhY2Vob2xkZXI9IkdpdEh1YiBQZXJzb25hbCBBY2Nlc3MgVG9rZW4iPgogICAgICAgIDxpbnB1dCB0eXBlPSJ0ZXh0IiBpZD0icmVwb05hbWUiIHBsYWNlaG9sZGVyPSJSZXBvIEFkaSAow5ZybjogaGFyaWthLXByb2plbSkiPgogICAgICAgIDxidXR0b24gY2xhc3M9ImJ0bi1zdWNjZXNzIiBvbmNsaWNrPSJwdXNoVG9HaXRodWIoKSI+zqkguUHJvamV5aSBEZXBsb3kgRXQ8L2J1dHRvbj4KICAgIDwvZGl2Pgo8L2Rpdj4KCjxzY3JpcHQ+CiAgICBjb25zdCBlZGl0b3IgPSBkb2N
+MUSIC_TEMPLATE = """<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { background: #0e0b16; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .player { background: #1b1429; padding: 24px; border-radius: 24px; width: 300px; text-align: center; border: 1px solid #4717f6; color: white; }
+    .cover { background: linear-gradient(45deg, #a239ca, #4717f6); width: 100px; height: 100px; margin: 0 auto 20px auto; border-radius: 50%; }
+    .controls { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
+    button { background: #a239ca; color: white; border: none; padding: 10px 18px; border-radius: 12px; cursor: pointer; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="player">
+    <div class="cover"></div>
+    <h4 style="margin:5px 0;">Cosmic Symphony</h4>
+    <p style="color:#a239ca; font-size:12px; margin:0 0 15px 0;">CloudDev Records</p>
+    <div class="controls"><button>⏮</button><button>▶</button><button>⏭</button></div>
+  </div>
+</body>
+</html>"""
+
+# V10'daki varsayılan e-ticaret şablonu
+DEFAULT_ECOMMERCE = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { background: #f8fafc; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+  .card { background: white; padding: 24px; border-radius: 20px; width: 280px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+  button { background: #0f172a; color: white; border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h3 style="margin:5px 0;">Cosmic Pro Kulaklık</h3>
+    <p style="color:#10b981; font-weight:bold; font-size:18px;">3.499 TL</p>
+    <button>Sepete Ekle</button>
+  </div>
+</body>
+</html>"""
+
+# Ana Arayüz (HTML / CSS / JS)
+IDE_INTERFACE = f"""<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudDev Studio v11 Step-by-Step</title>
+    <style>
+        :root {{
+            --bg-main: #08090c;
+            --bg-panel: #11131c;
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --text-dim: #64748b;
+            --border: #1e2937;
+        }}
+        body {{ 
+            margin: 0; font-family: system-ui, sans-serif; 
+            background: var(--bg-main); color: var(--text);
+            display: flex; flex-direction: column; min-height: 100vh;
+        }}
+        header {{ 
+            background: var(--bg-panel); padding: 14px 20px; 
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border);
+        }}
+        header h3 {{ margin: 0; background: linear-gradient(to right, #38bdf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }}
+        .tab-bar {{ display: flex; background: #0b0c12; border-bottom: 1px solid var(--border); }}
+        .tab-btn {{ background: none; border: none; color: var(--text-dim); padding: 14px 22px; font-size: 13px; font-weight: 600; cursor: pointer; }}
+        .tab-btn.active {{ color: var(--text); border-bottom: 2px solid var(--accent); background: var(--bg-panel); }}
+        .tab-content {{ display: none; padding: 16px; flex: 1; flex-direction: column; gap: 16px; box-sizing: border-box; }}
+        .tab-content.active {{ display: flex; }}
+        .editor-container {{ background: #0d0f17; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }}
+        .editor-header {{ background: #161926; padding: 10px 16px; font-size: 12px; color: var(--text-dim); border-bottom: 1px solid var(--border); }}
+        .editor-body {{ display: flex; height: 300px; }}
+        textarea {{ flex: 1; background: transparent; color: #e2e8f0; border: none; padding: 16px; resize: none; outline: none; font-family: monospace; font-size: 14px; }}
+        .preview-wrapper {{ border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #fff; }}
+        iframe {{ width: 100%; height: 300px; border: none; background: white; }}
+        .template-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }}
+        .template-item {{ background: #161926; border: 1px solid var(--border); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }}
+        button.action-id {{ background: var(--accent); color: #090d16; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }}
+    </style>
+</head>
+<body>
+
+<header>
+    <h3>☁️ CloudDev Studio v11</h3>
+    <button class="action-id" onclick="liveRender()">⚡ Çalıştır</button>
+</header>
+
+<div class="tab-bar">
+    <button id="btn-editor" class="tab-btn active" onclick="switchTab('editor-tab')">📝 Düzenleyici</button>
+    <button id="btn-templates" class="tab-btn" onclick="switchTab('templates-tab')">🗂 Şablonlar</button>
+</div>
+
+<div id="editor-tab" class="tab-content active">
+    <div class="editor-container">
+        <div class="editor-header">index.html</div>
+        <div class="editor-body">
+            <textarea id="codeEditor" oninput="liveRender()" placeholder="Kodlarınızı yazın..."></textarea>
+        </div>
+    </div>
+    <div class="preview-wrapper">
+        <iframe id="previewFrame"></iframe>
+    </div>
+</div>
+
+<div id="templates-tab" class="tab-content">
+    <div class="template-grid">
+        <div class="template-item">
+            <h4>💼 Premium Portfolyo</h4>
+            <p style="font-size:12px; color:var(--text-dim);">Kişisel marka ve projeleriniz için modern görünüm.</p>
+            <button class="action-id" onclick="loadTemplate('portfolio')">Yükle</button>
+        </div>
+        <div class="template-item">
+            <h4>🛒 E-Ticaret Kartı</h4>
+            <p style="font-size:12px; color:var(--text-dim);">Etkileşimli buton ve minimalist ürün kartı.</p>
+            <button class="action-id" onclick="loadTemplate('ecommerce')">Yükle</button>
+        </div>
+        <div class="template-item">
+            <h4>🎵 Kozmik Müzik Çalar</h4>
+            <p style="font-size:12px; color:var(--text-dim);">Şık çalma listesi alanıyla modern UI tasarımı.</p>
+            <button class="action-id" onclick="loadTemplate('music')">Yükle</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const editor = document.getElementById('codeEditor');
+    const previewFrame = document.getElementById('previewFrame');
+
+    // Python tarafındaki şablon verilerini JS'e güvenli şekilde aktarıyoruz
+    const templates = {{
+        portfolio: `{PORTFOLIO_TEMPLATE}`,
+        ecommerce: `{DEFAULT_ECOMMERCE}`,
+        music: `{MUSIC_TEMPLATE}`
+    }};
+
+    window.onload = function() {{
+        editor.value = templates.ecommerce;
+        liveRender();
+    }};
+
+    function liveRender() {{
+        try {{
+            previewFrame.srcdoc = editor.value;
+        }} catch(e) {{
+            console.log("Önizleme hatası.");
+        }}
+    }}
+
+    function switchTab(tabId) {{
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        
+        if(tabId === 'editor-tab') document.getElementById('btn-editor').classList.add('active');
+        if(tabId === 'templates-tab') document.getElementById('btn-templates').classList.add('active');
+    }}
+
+    function loadTemplate(key) {{
+        if(confirm("Mevcut kodlarınız silinecektir. Devam edilsin mi?")) {{
+            editor.value = templates[key];
+            liveRender();
+            switchTab('editor-tab');
+        }}
+    }}
+</script>
+</body>
+</html>"""
+
+@app.route('/')
+def index():
+    return render_template_string(IDE_INTERFACE)
+
+if __name__ == '__main__':
+    # Render port yönetimi ve lokal test uyumluluğu
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
+    
