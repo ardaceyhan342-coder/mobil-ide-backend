@@ -585,4 +585,63 @@ def ask_ai():
     current_code = data.get('current_code', '')
     
     API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-7B-Instruct"
-    system_instruction = "Sen profesyonel bir frontend mühendisisin. Verilen HTML kodunu bozmadan isteğ
+    system_instruction = "Sen profesyonel bir frontend mühendisisin. Verilen HTML kodunu bozmadan isteğe göre güncelle ve sadece saf kodu döndür. Açıklama veya markdown sembolü ekleme."
+    
+    # Python tırnak hatası yapmaması için API isteği .format() ile dinamik olarak birleştirilir
+    payload = {
+        "inputs": "<|im_start|>system\n{0}<|im_end|>\n<|im_start|>user\nMevcut Kod:\n{1}\n\nİstek: {2}<|im_end|>\n<|im_start|>assistant\n".format(system_instruction, current_code, user_prompt),
+        "parameters": {"max_new_tokens": 1600, "temperature": 0.3}
+    }
+    
+    try:
+        res = requests.post(API_URL, json=payload, timeout=25)
+        if res.status_code == 200:
+            raw_text = res.json()[0]['generated_text']
+            updated_code = raw_text.split("<|im_start|>assistant\n")[-1].strip() if "<|im_start|>assistant\n" in raw_text else raw_text
+            
+            for term in ["```html", "```css", "```js", "```", "<|im_end|>"]:
+                updated_code = updated_code.replace(term, "")
+            return jsonify({"status": "success", "updated_code": updated_code.strip()})
+        return jsonify({"status": "error", "message": "AI Servis Hatası (Kod: {0})".format(res.status_code)})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/github-push', methods=['POST'])
+def github_push():
+    data = request.json or {}
+    user_code = data.get('code', '')
+    token = data.get('token', '')
+    repo_name = data.get('repo', '')
+    
+    if not token or not repo_name:
+        return jsonify({"status": "error", "message": "Eksik parametre!"})
+        
+    headers = {"Authorization": "token {0}".format(token), "Accept": "application/vnd.github.v3+json"}
+    try:
+        user_res = requests.get("https://api.github.com/user", headers=headers, timeout=12)
+        if user_res.status_code != 200:
+            return jsonify({"status": "error", "message": "GitHub Token geçersiz!"})
+            
+        username = user_res.json()['login']
+        repo_data = {"name": repo_name, "private": False, "auto_init": True}
+        requests.post("https://api.github.com/user/repos", headers=headers, json=repo_data, timeout=12)
+
+        file_url = "https://api.github.com/repos/{0}/{1}/contents/index.html".format(username, repo_name)
+        get_file = requests.get(file_url, headers=headers, timeout=12)
+        sha = get_file.json()['sha'] if get_file.status_code == 200 else ""
+
+        encoded_code = base64.b64encode(user_code.encode('utf-8')).decode('utf-8')
+        push_data = {"message": "CloudDev Cosmic v11 Deploy Update", "content": encoded_code}
+        if sha:
+            push_data["sha"] = sha
+            
+        push_res = requests.put(file_url, headers=headers, json=push_data, timeout=12)
+        if push_res.status_code in [200, 201]:
+            return jsonify({"status": "success", "message": "Projeniz başarıyla senkronize edildi ve yayınlandı!"})
+        return jsonify({"status": "error", "message": "Yükleme sırasında hata oluştu."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
