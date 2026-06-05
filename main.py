@@ -5,14 +5,14 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V9 INTERFACE (METRİK SAYACI VE TEMA MOTORLU) ---
+# --- V10 COSMIC ULTIMATE INTERFACE (SATIR NUMARALI VE METRİK SAYACILI) ---
 IDE_INTERFACE = """
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloudDev Cosmic v9 Pro</title>
+    <title>CloudDev Studio v10 Cosmic Ultimate</title>
     <style>
         :root {
             --bg-main: #08090c;
@@ -22,6 +22,7 @@ IDE_INTERFACE = """
             --text: #f8fafc;
             --text-dim: #64748b;
             --border: #1e293b;
+            --success: #4ade80;
         }
         
         body.theme-cyberpunk {
@@ -32,6 +33,18 @@ IDE_INTERFACE = """
             --text: #ffffff;
             --text-dim: #9d4edd;
             --border: #3c1670;
+            --success: #39ff14;
+        }
+        
+        body.theme-matrix {
+            --bg-main: #000000;
+            --bg-panel: #0d0d0d;
+            --accent: #00ff41;
+            --accent-ai: #008f11;
+            --text: #00ff41;
+            --text-dim: #005c0c;
+            --border: #00ff41;
+            --success: #ffffff;
         }
 
         body { 
@@ -42,7 +55,7 @@ IDE_INTERFACE = """
             display: flex; 
             flex-direction: column; 
             min-height: 100vh; 
-            transition: background 0.3s, color 0.3s;
+            transition: background 0.3s, color 0.3s; 
         }
         header { 
             background: var(--bg-panel); 
@@ -62,28 +75,31 @@ IDE_INTERFACE = """
             -webkit-text-fill-color: transparent; 
         }
         
-        .header-actions {
-            display: flex;
+        .actions-row { 
+            display: flex; 
+            gap: 10px; 
             align-items: center;
-            gap: 12px;
         }
-        
-        select {
-            background: #1e2235;
-            color: var(--text);
-            border: 1px solid var(--border);
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            outline: none;
-            cursor: pointer;
+        select { 
+            background: #1e2235; 
+            color: var(--text); 
+            border: 1px solid var(--border); 
+            padding: 10px; 
+            border-radius: 8px; 
+            font-size: 12px; 
+            font-weight: 600; 
+            outline: none; 
+            cursor: pointer; 
         }
         
         .tab-bar { 
             display: flex; 
             background: #0b0c12; 
             border-bottom: 1px solid var(--border); 
+            overflow-x: auto; 
+            scrollbar-width: none; 
         }
+        .tab-bar::-webkit-scrollbar { display: none; }
         .tab-btn { 
             background: none; 
             border: none; 
@@ -93,6 +109,7 @@ IDE_INTERFACE = """
             font-weight: 600; 
             cursor: pointer; 
             border-bottom: 2px solid transparent; 
+            white-space: nowrap; 
             transition: all 0.2s; 
         }
         .tab-btn.active { 
@@ -121,6 +138,7 @@ IDE_INTERFACE = """
             display: flex; 
             flex-direction: column; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            position: relative; 
         }
         .editor-header { 
             background: #161926; 
@@ -128,14 +146,31 @@ IDE_INTERFACE = """
             font-size: 12px; 
             color: var(--text-dim); 
             border-bottom: 1px solid var(--border); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
         }
         
         .editor-body { 
             display: flex; 
-            height: 350px; 
+            height: 380px; 
             font-family: monospace; 
             font-size: 14px; 
+            line-height: 1.6; 
             background: #0d0f17; 
+            position: relative; 
+        }
+        .line-numbers { 
+            padding: 16px 8px; 
+            text-align: right; 
+            background: #0a0b10; 
+            color: #334155; 
+            user-select: none; 
+            min-width: 45px; 
+            border-right: 1px solid #141724; 
+            overflow: hidden; 
+            white-space: pre; 
+            box-sizing: border-box; 
         }
         textarea { 
             flex: 1; 
@@ -148,18 +183,19 @@ IDE_INTERFACE = """
             outline: none; 
             height: 100%; 
             overflow-y: auto; 
+            white-space: pre; 
             font-family: monospace; 
         }
         
-        .editor-footer {
-            background: #161926;
-            padding: 8px 16px;
-            font-size: 11px;
-            color: var(--text-dim);
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: flex-end;
-            gap: 16px;
+        .editor-footer { 
+            background: #161926; 
+            padding: 6px 16px; 
+            font-size: 11px; 
+            color: var(--text-dim); 
+            border-top: 1px solid var(--border); 
+            display: flex; 
+            justify-content: flex-end; 
+            gap: 14px; 
         }
         
         .card { 
@@ -200,9 +236,12 @@ IDE_INTERFACE = """
             align-items: center; 
             justify-content: center; 
             gap: 8px; 
+            transition: all 0.2s; 
         }
-        .btn-success { background: #4ade80; color: #052e16; }
+        button:active { transform: scale(0.97); }
+        .btn-success { background: var(--success); color: #052e16; }
         .btn-ai { background: var(--accent-ai); color: #2e1065; }
+        .btn-secondary { background: #1e2235; color: var(--text); border: 1px solid var(--border); }
         
         .preview-wrapper { 
             border-radius: 10px; 
@@ -231,17 +270,25 @@ IDE_INTERFACE = """
             grid-template-columns: 1fr 1fr; 
             gap: 12px; 
         }
+        .save-indicator { 
+            font-size: 11px; 
+            color: var(--success); 
+            font-weight: 600; 
+            display: none; 
+        }
     </style>
 </head>
-<body>
+<body class="theme-cosmic">
 
 <header>
-    <h3>✨ CloudDev Cosmic v9 Pro</h3>
-    <div class="header-actions">
+    <h3>✨ CloudDev Cosmic v10 Pro</h3>
+    <div class="actions-row">
         <select id="themeSelect" onchange="changeTheme()">
-            <option value="theme-cosmic">🌌 Cosmic Dark</option>
-            <option value="theme-cyberpunk">🔮 Cyberpunk Neon</option>
+            <option value="theme-cosmic">🌌 Cosmic</option>
+            <option value="theme-cyberpunk">🔮 Cyberpunk</option>
+            <option value="theme-matrix">📟 Matrix</option>
         </select>
+        <button class="btn-secondary" onclick="downloadCode()">📥 İndir</button>
         <button onclick="liveRender()">⚡ Çalıştır</button>
     </div>
 </header>
@@ -257,9 +304,11 @@ IDE_INTERFACE = """
     <div class="editor-container">
         <div class="editor-header">
             <span>index.html</span>
+            <span id="saveStatus" class="save-indicator">✓ Otomatik Kaydedildi</span>
         </div>
         <div class="editor-body">
-            <textarea id="codeEditor" oninput="handleEditorInput()" placeholder="Kodlarınızı buraya yazın..."></textarea>
+            <div id="lineNumbers" class="line-numbers">1</div>
+            <textarea id="codeEditor" oninput="handleEditorInput()" onscroll="syncScroll()" placeholder="Kodlarınızı buraya yazın..." wrap="off"></textarea>
         </div>
         <div class="editor-footer">
             <span id="charCount">Karakter: 0</span>
@@ -306,6 +355,7 @@ IDE_INTERFACE = """
 
 <script>
     const editor = document.getElementById('codeEditor');
+    const lineNumbers = document.getElementById('lineNumbers');
 
     const defaultCode = `<!DOCTYPE html>
 <html>
@@ -327,7 +377,7 @@ IDE_INTERFACE = """
 </html>`;
 
     window.onload = function() {
-        const savedCode = localStorage.getItem('clouddev_v9_code');
+        const savedCode = localStorage.getItem('clouddev_v10_code');
         const savedTheme = localStorage.getItem('clouddev_theme') || 'theme-cosmic';
         
         document.body.className = savedTheme;
@@ -338,11 +388,13 @@ IDE_INTERFACE = """
         } else {
             editor.value = defaultCode;
         }
+        updateLineNumbers();
         updateMetrics();
         liveRender();
     }
 
     function handleEditorInput() {
+        updateLineNumbers();
         updateMetrics();
         autoSaveCode();
     }
@@ -351,6 +403,15 @@ IDE_INTERFACE = """
         const selectedTheme = document.getElementById('themeSelect').value;
         document.body.className = selectedTheme;
         localStorage.setItem('clouddev_theme', selectedTheme);
+    }
+
+    function updateLineNumbers() {
+        const lines = editor.value.split('\\n');
+        let numString = '';
+        for (let i = 1; i <= lines.length; i++) {
+            numString += i + '\\n';
+        }
+        lineNumbers.textContent = numString;
     }
 
     function updateMetrics() {
@@ -365,8 +426,15 @@ IDE_INTERFACE = """
         document.getElementById('sizeCount').textContent = `Boyut: ${kbSize} KB`;
     }
 
+    function syncScroll() {
+        lineNumbers.scrollTop = editor.scrollTop;
+    }
+
     function autoSaveCode() {
-        localStorage.setItem('clouddev_v9_code', editor.value);
+        localStorage.setItem('clouddev_v10_code', editor.value);
+        const indicator = document.getElementById('saveStatus');
+        indicator.style.display = 'inline';
+        setTimeout(() => { indicator.style.display = 'none'; }, 1500);
     }
 
     function switchTab(tabId) {
@@ -374,21 +442,34 @@ IDE_INTERFACE = """
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
         
-        if(tabId === 'editor-tab') {
-            document.getElementById('btn-editor').classList.add('active');
-            liveRender();
-        }
+        if(tabId === 'editor-tab') document.getElementById('btn-editor').classList.add('active');
         if(tabId === 'templates-tab') document.getElementById('btn-templates').classList.add('active');
         if(tabId === 'ai-tab') document.getElementById('btn-ai').classList.add('active');
         if(tabId === 'git-tab') document.getElementById('btn-git').classList.add('active');
+        
+        if(tabId === 'editor-tab') { 
+            liveRender(); 
+            setTimeout(() => { updateLineNumbers(); syncScroll(); }, 50); 
+        }
     }
 
     function liveRender() {
         try {
             document.getElementById('previewFrame').srcdoc = editor.value;
         } catch(e) {
-            console.log("Önizleme hatası.");
+            console.log("Önizleme yüklenemedi.");
         }
+    }
+
+    function downloadCode() {
+        const code = editor.value;
+        const blob = new Blob([code], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'index.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     }
 
     async function askRealAI() {
@@ -433,7 +514,7 @@ h1 { color: #38bdf8; }
 <body>
 <div class="container">
   <h1>Geliştirici Portfolyosu</h1>
-  <p>CloudDev v9 Canlı Tasarım Altyapısı.</p>
+  <p>CloudDev v10 Canlı Tasarım Altyapısı.</p>
 </div>
 </body>
 </html>`,
@@ -505,40 +586,4 @@ def ask_ai():
 @app.route('/api/github-push', methods=['POST'])
 def github_push():
     data = request.json or {}
-    user_code = data.get('code', '')
-    token = data.get('token', '')
-    repo_name = data.get('repo', '')
-    
-    if not token or not repo_name:
-        return jsonify({"status": "error", "message": "Eksik parametre girdiniz!"})
-        
-    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github.v3+json"}
-    try:
-        user_res = requests.get("https://api.github.com/user", headers=headers, timeout=12)
-        if user_res.status_code != 200:
-            return jsonify({"status": "error", "message": "Girdiğiniz GitHub Token hatalı!"})
-            
-        username = user_res.json()['login']
-        repo_data = {"name": repo_name, "private": False, "auto_init": True}
-        requests.post("https://api.github.com/user/repos", headers=headers, json=repo_data, timeout=12)
-
-        file_url = f"https://api.github.com/repos/{username}/{repo_name}/contents/index.html"
-        get_file = requests.get(file_url, headers=headers, timeout=12)
-        sha = ""
-        if get_file.status_code == 200:
-            sha = get_file.json()['sha']
-
-        encoded_code = base64.b64encode(user_code.encode('utf-8')).decode('utf-8')
-        push_data = {"message": "CloudDev Cosmic v9 Deploy Update", "content": encoded_code}
-        if sha: push_data["sha"] = sha
-            
-        push_res = requests.put(file_url, headers=headers, json=push_data, timeout=12)
-        if push_res.status_code in [200, 201]:
-            return jsonify({"status": "success", "message": "Projeniz başarıyla senkronize edildi ve yayınlandı!"})
-        return jsonify({"status": "error", "message": "Dosya transferi sırasında hata oluştu."})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
-        
+    user_code = data
