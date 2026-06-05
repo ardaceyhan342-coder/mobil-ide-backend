@@ -1,13 +1,10 @@
-import os
-import requests
-import re
+import os, requests, re, base64
 from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V12 COSMIC ULTIMATE (KORUNAN HAFİF TEK PARÇA SÜRÜM) ---
-IDE_INTERFACE = """
-<!DOCTYPE html>
+# --- V12 COSMIC ULTIMATE (ULTRA COMPACT SINGLE FILE) ---
+IDE_INTERFACE = """<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
@@ -17,7 +14,7 @@ IDE_INTERFACE = """
         :root { --bg-main: #08090c; --bg-panel: #11131c; --accent: #38bdf8; --accent-ai: #c084fc; --text: #f8fafc; --text-dim: #64748b; --border: #1e293b; --success: #4ade80; }
         body.theme-cyberpunk { --bg-main: #0f051d; --bg-panel: #1a0b2e; --accent: #ff007f; --accent-ai: #00ffff; --text: #ffffff; --text-dim: #9d4edd; --border: #3c1670; --success: #39ff14; }
         body.theme-matrix { --bg-main: #000000; --bg-panel: #0d0d0d; --accent: #00ff41; --accent-ai: #008f11; --text: #00ff41; --text-dim: #005c0c; --border: #00ff41; --success: #ffffff; }
-        body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg-main); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; }
+        body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg-main); color: var(--text); display: flex; flex-direction: column; min-height: 100vh; transition: background 0.3s, color 0.3s; }
         header { background: var(--bg-panel); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
         header h3 { margin: 0; font-size: 16px; font-weight: 800; background: linear-gradient(to right, var(--accent), var(--accent-ai)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .actions-row { display: flex; gap: 10px; align-items: center; }
@@ -32,15 +29,16 @@ IDE_INTERFACE = """
         .editor-body { display: flex; height: 380px; font-family: monospace; font-size: 14px; background: #0d0f17; }
         .line-numbers { padding: 16px 8px; text-align: right; background: #0a0b10; color: #334155; min-width: 45px; border-right: 1px solid #141724; white-space: pre; }
         textarea { flex: 1; background: transparent; color: #e2e8f0; border: none; padding: 16px; box-sizing: border-box; resize: none; outline: none; white-space: pre; font-family: monospace; }
-        .editor-footer { background: #161926; padding: 6px 16px; font-size: 11px; color: var(--text-dim); display: flex; justify-content: flex-end; gap: 14px; }
+        .editor-footer { background: #161926; padding: 6px 16px; font-size: 11px; color: var(--text-dim); display: flex; justify-content: flex-end; gap: 14px; border-top: 1px solid var(--border); }
         .card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
         .card h4 { margin: 0; font-size: 14px; }
         input { background: #181b28; color: var(--text); border: 1px solid var(--border); padding: 12px; border-radius: 8px; font-size: 13px; outline: none; }
-        button { background: var(--accent); color: #090d16; border: none; padding: 12px 20px; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        button { background: var(--accent); color: #090d16; border: none; padding: 12px 20px; font-size: 13px; font-weight: 700; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
+        button:active { transform: scale(0.97); }
         .btn-success { background: var(--success); color: #052e16; }
         .btn-ai { background: var(--accent-ai); color: #2e1065; }
         .btn-secondary { background: #1e2235; color: var(--text); border: 1px solid var(--border); }
-        .preview-wrapper { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
+        .preview-wrapper { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); background: #fff; }
         iframe { width: 100%; height: 320px; border: none; background: white; }
         .ai-box { background: #05060a; border-left: 4px solid var(--accent-ai); padding: 14px; border-radius: 8px; font-size: 13px; white-space: pre-wrap; }
         .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -192,7 +190,7 @@ def ask_ai():
     user_prompt = data.get('prompt', '')
     current_code = data.get('current_code', '')
     
-    API_URL = "[https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-7B-Instruct](https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-7B-Instruct)"
+    API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-7B-Instruct"
     system_instruction = "Sen profesyonel bir frontend mühendisisin. Verilen HTML kodunu bozmadan isteğe göre güncelle ve sadece saf kodu döndür. Açıklama veya markdown sembolü ekleme."
     
     payload = {
@@ -205,10 +203,41 @@ def ask_ai():
         if res.status_code == 200:
             raw_text = res.json()[0]['generated_text']
             updated_code = raw_text.split("<|im_start|>assistant\n")[-1].strip() if "<|im_start|>assistant\n" in raw_text else raw_text
-            
-            # v12 Gelişmiş Regex Filtresi (Gereksiz kod bloklarını temizler)
-            updated_code = re.sub(r'
-http://googleusercontent.com/immersive_entry_chip/0
+            updated_code = re.sub(r'            updated_code = updated_code.replace("<|im_end|>", "").strip()
+            return jsonify({"status": "success", "updated_code": updated_code})
+        return jsonify({"status": "error", "message": "AI Hatası (Kod: " + str(res.status_code) + ")"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
 
-Dosyanın altındaki `app.run` kısmının tam geldiğinden emin olup direkt yapıştır ve Render'a yolla! Her şey hazır.
-            
+@app.route('/api/github-push', methods=['POST'])
+def github_push():
+    data = request.json or {}
+    user_code = data.get('code', '')
+    token = data.get('token', '')
+    repo_name = data.get('repo', '')
+    if not token or not repo_name:
+        return jsonify({"status": "error", "message": "Eksik parametre!"})
+    headers = {"Authorization": "token " + token, "Accept": "application/vnd.github.v3+json"}
+    try:
+        user_res = requests.get("[https://api.github.com/user](https://api.github.com/user)", headers=headers, timeout=12)
+        if user_res.status_code != 200:
+            return jsonify({"status": "error", "message": "GitHub Token geçersiz!"})
+        username = user_res.json()['login']
+        repo_data = {"name": repo_name, "private": False, "auto_init": True}
+        requests.post("[https://api.github.com/user/repos](https://api.github.com/user/repos)", headers=headers, json=repo_data, timeout=12)
+        file_url = "[https://api.github.com/repos/](https://api.github.com/repos/)" + username + "/" + repo_name + "/contents/index.html"
+        get_file = requests.get(file_url, headers=headers, timeout=12)
+        sha = get_file.json()['sha'] if get_file.status_code == 200 else ""
+        encoded_code = base64.b64encode(user_code.encode('utf-8')).decode('utf-8')
+        push_data = {"message": "CloudDev Cosmic v12 Deploy", "content": encoded_code}
+        if sha: push_data["sha"] = sha
+        push_res = requests.put(file_url, headers=headers, json=push_data, timeout=12)
+        if push_res.status_code in [200, 201]:
+            return jsonify({"status": "success", "message": "Projeniz başarıyla güncellendi!"})
+        return jsonify({"status": "error", "message": "Yükleme hatası."})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
