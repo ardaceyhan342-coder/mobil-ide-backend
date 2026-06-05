@@ -5,14 +5,14 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V11 COSMIC ULTIMATE INTERFACE (TÜM ÖZELLİKLER KORUNDU + MÜZİK ŞABLONU EKLENDİ) ---
+# --- V10 COSMIC ULTIMATE INTERFACE (SATIR NUMARALI VE METRİK SAYACILI) ---
 IDE_INTERFACE = """
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloudDev Studio v11 Cosmic Ultimate</title>
+    <title>CloudDev Studio v10 Cosmic Ultimate</title>
     <style>
         :root {
             --bg-main: #08090c;
@@ -281,7 +281,7 @@ IDE_INTERFACE = """
 <body class="theme-cosmic">
 
 <header>
-    <h3>✨ CloudDev Cosmic v11 Pro</h3>
+    <h3>✨ CloudDev Cosmic v10 Pro</h3>
     <div class="actions-row">
         <select id="themeSelect" onchange="changeTheme()">
             <option value="theme-cosmic">🌌 Cosmic</option>
@@ -331,7 +331,6 @@ IDE_INTERFACE = """
         <div class="template-grid">
             <button style="background:#1e2235; color:white;" onclick="loadTemplate('portfolio')">💼 Premium Portfolyo</button>
             <button style="background:#1e2235; color:white;" onclick="loadTemplate('ecommerce')">🛒 E-Ticaret Arayüzü</button>
-            <button style="background:#1e2235; color:white;" onclick="loadTemplate('music')">🎵 Kozmik Müzik Çalar</button>
         </div>
     </div>
 </div>
@@ -515,32 +514,11 @@ h1 { color: #38bdf8; }
 <body>
 <div class="container">
   <h1>Geliştirici Portfolyosu</h1>
-  <p>CloudDev v11 Canlı Tasarım Altyapısı.</p>
+  <p>CloudDev v10 Canlı Tasarım Altyapısı.</p>
 </div>
 </body>
 </html>`,
-        ecommerce: defaultCode,
-        music: `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <style>
-    body { background: #0e0b16; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-    .player { background: #1b1429; padding: 24px; border-radius: 24px; width: 300px; text-align: center; border: 1px solid #4717f6; color: white; }
-    .cover { background: linear-gradient(45deg, #a239ca, #4717f6); width: 100px; height: 100px; margin: 0 auto 20px auto; border-radius: 50%; }
-    .controls { display: flex; justify-content: center; gap: 15px; margin-top: 15px; }
-    button { background: #a239ca; color: white; border: none; padding: 10px 18px; border-radius: 12px; cursor: pointer; font-weight: bold; }
-  </style>
-</head>
-<body>
-  <div class="player">
-    <div class="cover"></div>
-    <h4 style="margin:5px 0;">Cosmic Symphony</h4>
-    <p style="color:#a239ca; font-size:12px; margin:0 0 15px 0;">CloudDev Records</p>
-    <div class="controls"><button>⏮</button><button>▶</button><button>⏭</button></div>
-  </div>
-</body>
-</html>`
+        ecommerce: defaultCode
     };
 
     function loadTemplate(key) {
@@ -585,4 +563,27 @@ def ask_ai():
     current_code = data.get('current_code', '')
     
     API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-7B-Instruct"
-    system_instruction = "Sen profesyonel bir frontend mühendisisin. Verilen HTML kodunu bo
+    system_instruction = "Sen profesyonel bir frontend mühendisisin. Verilen HTML kodunu bozmadan isteğe göre güncelle ve sadece saf kodu döndür. Açıklama veya markdown sembolü ekleme."
+    
+    payload = {
+        "inputs": f"<|im_start|>system\n{system_instruction}<|im_end|>\n<|im_start|>user\nMevcut Kod:\n{current_code}\n\nİstek: {user_prompt}<|im_end|>\n<|im_start|>assistant\n",
+        "parameters": {"max_new_tokens": 1600, "temperature": 0.3}
+    }
+    
+    try:
+        res = requests.post(API_URL, json=payload, timeout=25)
+        if res.status_code == 200:
+            raw_text = res.json()[0]['generated_text']
+            updated_code = raw_text.split("<|im_start|>assistant\n")[-1].strip() if "<|im_start|>assistant\n" in raw_text else raw_text
+            
+            for term in ["```html", "```css", "```js", "```", "<|im_end|>"]:
+                updated_code = updated_code.replace(term, "")
+            return jsonify({"status": "success", "updated_code": updated_code.strip()})
+        return jsonify({"status": "error", "message": f"AI Hatası (Kod: {res.status_code})"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/github-push', methods=['POST'])
+def github_push():
+    data = request.json or {}
+    user_code = data
