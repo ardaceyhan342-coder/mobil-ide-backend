@@ -5,8 +5,8 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V11 COSMIC MASTERPIECE INTERFACE ---
-IDE_INTERFACE = """
+# --- V11 COSMIC MASTERPIECE INTERFACE (FIXED WITH RAW STRING) ---
+IDE_INTERFACE = r"""
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -582,4 +582,4 @@ p { color: #9ca3af; font-size: 16px; }
 <style>
   body { background: #0e0b16; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
   .player { background: #1b1429; padding: 24px; border-radius: 24px; width: 300px; text-align: center; border: 1px solid #4717f6; color: white; }
-  .cover { background: linear-gradient(45deg, #a239ca, #4717f6)
+  .cover { background: linear-gradient
