@@ -5,51 +5,89 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V8 INTERFACE (KARARLI VE GELİŞTİRİLMİŞ SÜRÜM) ---
+# --- V9 INTERFACE (METRİK SAYACI VE TEMA MOTORLU) ---
 IDE_INTERFACE = """
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloudDev Cosmic v8 Pro</title>
+    <title>CloudDev Cosmic v9 Pro</title>
     <style>
+        :root {
+            --bg-main: #08090c;
+            --bg-panel: #11131c;
+            --accent: #38bdf8;
+            --accent-ai: #c084fc;
+            --text: #f8fafc;
+            --text-dim: #64748b;
+            --border: #1e293b;
+        }
+        
+        body.theme-cyberpunk {
+            --bg-main: #0f051d;
+            --bg-panel: #1a0b2e;
+            --accent: #ff007f;
+            --accent-ai: #00ffff;
+            --text: #ffffff;
+            --text-dim: #9d4edd;
+            --border: #3c1670;
+        }
+
         body { 
             margin: 0; 
             font-family: system-ui, -apple-system, sans-serif; 
-            background: #08090c; 
-            color: #f8fafc; 
+            background: var(--bg-main); 
+            color: var(--text); 
             display: flex; 
             flex-direction: column; 
             min-height: 100vh; 
+            transition: background 0.3s, color 0.3s;
         }
         header { 
-            background: #11131c; 
+            background: var(--bg-panel); 
             padding: 14px 20px; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
-            border-bottom: 1px solid #1e293b; 
+            border-bottom: 1px solid var(--border); 
             box-shadow: 0 4px 30px rgba(0,0,0,0.4); 
         }
         header h3 { 
             margin: 0; 
             font-size: 16px; 
             font-weight: 800; 
-            background: linear-gradient(to right, #38bdf8, #c084fc); 
+            background: linear-gradient(to right, var(--accent), var(--accent-ai)); 
             -webkit-background-clip: text; 
             -webkit-text-fill-color: transparent; 
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        select {
+            background: #1e2235;
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            outline: none;
+            cursor: pointer;
         }
         
         .tab-bar { 
             display: flex; 
             background: #0b0c12; 
-            border-bottom: 1px solid #1e293b; 
+            border-bottom: 1px solid var(--border); 
         }
         .tab-btn { 
             background: none; 
             border: none; 
-            color: #64748b; 
+            color: var(--text-dim); 
             padding: 14px 22px; 
             font-size: 13px; 
             font-weight: 600; 
@@ -58,9 +96,9 @@ IDE_INTERFACE = """
             transition: all 0.2s; 
         }
         .tab-btn.active { 
-            color: #f8fafc; 
-            border-bottom: 2px solid #38bdf8; 
-            background: #11131c; 
+            color: var(--text); 
+            border-bottom: 2px solid var(--accent); 
+            background: var(--bg-panel); 
         }
         
         .tab-content { 
@@ -77,7 +115,7 @@ IDE_INTERFACE = """
         
         .editor-container { 
             background: #0d0f17; 
-            border: 1px solid #1e293b; 
+            border: 1px solid var(--border); 
             border-radius: 12px; 
             overflow: hidden; 
             display: flex; 
@@ -88,8 +126,8 @@ IDE_INTERFACE = """
             background: #161926; 
             padding: 10px 16px; 
             font-size: 12px; 
-            color: #64748b; 
-            border-bottom: 1px solid #1e293b; 
+            color: var(--text-dim); 
+            border-bottom: 1px solid var(--border); 
         }
         
         .editor-body { 
@@ -113,9 +151,20 @@ IDE_INTERFACE = """
             font-family: monospace; 
         }
         
+        .editor-footer {
+            background: #161926;
+            padding: 8px 16px;
+            font-size: 11px;
+            color: var(--text-dim);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+        }
+        
         .card { 
-            background: #11131c; 
-            border: 1px solid #1e293b; 
+            background: var(--bg-panel); 
+            border: 1px solid var(--border); 
             border-radius: 12px; 
             padding: 18px; 
             display: flex; 
@@ -130,8 +179,8 @@ IDE_INTERFACE = """
         
         input { 
             background: #181b28; 
-            color: #f8fafc; 
-            border: 1px solid #1e293b; 
+            color: var(--text); 
+            border: 1px solid var(--border); 
             padding: 12px; 
             border-radius: 8px; 
             font-size: 13px; 
@@ -139,7 +188,7 @@ IDE_INTERFACE = """
         }
         
         button { 
-            background: #38bdf8; 
+            background: var(--accent); 
             color: #090d16; 
             border: none; 
             padding: 12px 20px; 
@@ -153,12 +202,12 @@ IDE_INTERFACE = """
             gap: 8px; 
         }
         .btn-success { background: #4ade80; color: #052e16; }
-        .btn-ai { background: #c084fc; color: #2e1065; }
+        .btn-ai { background: var(--accent-ai); color: #2e1065; }
         
         .preview-wrapper { 
             border-radius: 10px; 
             overflow: hidden; 
-            border: 1px solid #1e293b; 
+            border: 1px solid var(--border); 
             background: #fff; 
         }
         iframe { 
@@ -170,7 +219,7 @@ IDE_INTERFACE = """
         
         .ai-box { 
             background: #05060a; 
-            border-left: 4px solid #c084fc; 
+            border-left: 4px solid var(--accent-ai); 
             padding: 14px; 
             border-radius: 8px; 
             font-size: 13px; 
@@ -187,8 +236,14 @@ IDE_INTERFACE = """
 <body>
 
 <header>
-    <h3>✨ CloudDev Cosmic v8 Pro</h3>
-    <button onclick="liveRender()">⚡ Çalıştır</button>
+    <h3>✨ CloudDev Cosmic v9 Pro</h3>
+    <div class="header-actions">
+        <select id="themeSelect" onchange="changeTheme()">
+            <option value="theme-cosmic">🌌 Cosmic Dark</option>
+            <option value="theme-cyberpunk">🔮 Cyberpunk Neon</option>
+        </select>
+        <button onclick="liveRender()">⚡ Çalıştır</button>
+    </div>
 </header>
 
 <div class="tab-bar">
@@ -204,7 +259,12 @@ IDE_INTERFACE = """
             <span>index.html</span>
         </div>
         <div class="editor-body">
-            <textarea id="codeEditor" oninput="autoSaveCode()" placeholder="Kodlarınızı buraya yazın..."></textarea>
+            <textarea id="codeEditor" oninput="handleEditorInput()" placeholder="Kodlarınızı buraya yazın..."></textarea>
+        </div>
+        <div class="editor-footer">
+            <span id="charCount">Karakter: 0</span>
+            <span id="lineCount">Satır: 1</span>
+            <span id="sizeCount">Boyut: 0.00 KB</span>
         </div>
     </div>
     
@@ -267,17 +327,46 @@ IDE_INTERFACE = """
 </html>`;
 
     window.onload = function() {
-        const savedCode = localStorage.getItem('clouddev_v8_code');
+        const savedCode = localStorage.getItem('clouddev_v9_code');
+        const savedTheme = localStorage.getItem('clouddev_theme') || 'theme-cosmic';
+        
+        document.body.className = savedTheme;
+        document.getElementById('themeSelect').value = savedTheme;
+
         if(savedCode) {
             editor.value = savedCode;
         } else {
             editor.value = defaultCode;
         }
+        updateMetrics();
         liveRender();
     }
 
+    function handleEditorInput() {
+        updateMetrics();
+        autoSaveCode();
+    }
+
+    function changeTheme() {
+        const selectedTheme = document.getElementById('themeSelect').value;
+        document.body.className = selectedTheme;
+        localStorage.setItem('clouddev_theme', selectedTheme);
+    }
+
+    function updateMetrics() {
+        const text = editor.value;
+        const totalLines = text.split('\\n').length;
+        const totalChars = text.length;
+        const byteSize = new Blob([text]).size;
+        const kbSize = (byteSize / 1024).toFixed(2);
+
+        document.getElementById('charCount').textContent = `Karakter: ${totalChars}`;
+        document.getElementById('lineCount').textContent = `Satır: ${totalLines}`;
+        document.getElementById('sizeCount').textContent = `Boyut: ${kbSize} KB`;
+    }
+
     function autoSaveCode() {
-        localStorage.setItem('clouddev_v8_code', editor.value);
+        localStorage.setItem('clouddev_v9_code', editor.value);
     }
 
     function switchTab(tabId) {
@@ -320,7 +409,7 @@ IDE_INTERFACE = """
             if(data.status === "success") {
                 aiResult.innerText = "Kod başarıyla entegre edildi!";
                 editor.value = data.updated_code;
-                autoSaveCode();
+                handleEditorInput();
                 liveRender();
             } else {
                 aiResult.innerText = "Hata: " + data.message;
@@ -344,7 +433,7 @@ h1 { color: #38bdf8; }
 <body>
 <div class="container">
   <h1>Geliştirici Portfolyosu</h1>
-  <p>CloudDev v8 Canlı Tasarım Altyapısı.</p>
+  <p>CloudDev v9 Canlı Tasarım Altyapısı.</p>
 </div>
 </body>
 </html>`,
@@ -354,7 +443,7 @@ h1 { color: #38bdf8; }
     function loadTemplate(key) {
         if(confirm("Mevcut kodlarınız silinecek. Devam edilsin mi?")) {
             editor.value = templates[key];
-            autoSaveCode();
+            handleEditorInput();
             switchTab('editor-tab');
         }
     }
@@ -440,7 +529,7 @@ def github_push():
             sha = get_file.json()['sha']
 
         encoded_code = base64.b64encode(user_code.encode('utf-8')).decode('utf-8')
-        push_data = {"message": "CloudDev Cosmic v8 Deploy Update", "content": encoded_code}
+        push_data = {"message": "CloudDev Cosmic v9 Deploy Update", "content": encoded_code}
         if sha: push_data["sha"] = sha
             
         push_res = requests.put(file_url, headers=headers, json=push_data, timeout=12)
