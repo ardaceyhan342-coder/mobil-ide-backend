@@ -5,14 +5,14 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# --- V10 COSMIC ULTIMATE INTERFACE (SATIR NUMARALI VE METRİK SAYACILI) ---
+# --- V11 COSMIC MASTERPIECE INTERFACE ---
 IDE_INTERFACE = """
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CloudDev Studio v10 Cosmic Ultimate</title>
+    <title>CloudDev Studio v11 Cosmic Masterpiece</title>
     <style>
         :root {
             --bg-main: #08090c;
@@ -267,9 +267,25 @@ IDE_INTERFACE = """
         }
         .template-grid { 
             display: grid; 
-            grid-template-columns: 1fr 1fr; 
+            grid-template-columns: 1fr; 
             gap: 12px; 
         }
+        @media(min-width: 600px) {
+            .template-grid { grid-template-columns: 1fr 1fr; }
+        }
+        .template-item {
+            background: #161926;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            justify-content: space-between;
+        }
+        .template-info h5 { margin: 0; font-size: 14px; color: var(--accent); }
+        .template-info p { margin: 4px 0 0 0; font-size: 12px; color: var(--text-dim); }
+        
         .save-indicator { 
             font-size: 11px; 
             color: var(--success); 
@@ -281,7 +297,7 @@ IDE_INTERFACE = """
 <body class="theme-cosmic">
 
 <header>
-    <h3>✨ CloudDev Cosmic v10 Pro</h3>
+    <h3>✨ CloudDev Studio v11 Masterpiece</h3>
     <div class="actions-row">
         <select id="themeSelect" onchange="changeTheme()">
             <option value="theme-cosmic">🌌 Cosmic</option>
@@ -327,10 +343,49 @@ IDE_INTERFACE = """
 
 <div id="templates-tab" class="tab-content">
     <div class="card">
-        <h4>🗂️ Hazır Tasarım Altyapıları</h4>
+        <h4>🗂️ Gelişmiş Tasarım Altyapıları Kütüphanesi</h4>
         <div class="template-grid">
-            <button style="background:#1e2235; color:white;" onclick="loadTemplate('portfolio')">💼 Premium Portfolyo</button>
-            <button style="background:#1e2235; color:white;" onclick="loadTemplate('ecommerce')">🛒 E-Ticaret Arayüzü</button>
+            
+            <div class="template-item">
+                <div class="template-info">
+                    <h5>💼 Premium Portfolyo</h5>
+                    <p>Kişisel marka ve projelerini modern bir görünümle sergile.</p>
+                </div>
+                <button style="width:100%;" onclick="loadTemplate('portfolio')">Yükle</button>
+            </div>
+
+            <div class="template-item">
+                <div class="template-info">
+                    <h5>🛒 E-Ticaret Arayüzü</h5>
+                    <p>Özel fiyat etiketi ve etkileşimli butona sahip minimalist ürün kartı.</p>
+                </div>
+                <button style="width:100%;" onclick="loadTemplate('ecommerce')">Yükle</button>
+            </div>
+
+            <div class="template-item">
+                <div class="template-info">
+                    <h5>🎵 Kozmik Müzik Çalar</h5>
+                    <p>Butonları ve şık çalma listesi alanıyla modern bir oynatıcı UI tasarımı.</p>
+                </div>
+                <button style="width:100%;" onclick="loadTemplate('music')">Yükle</button>
+            </div>
+
+            <div class="template-item">
+                <div class="template-info">
+                    <h5>📰 Dinamik Haber Portalı</h5>
+                    <p>Izgara (Grid) yapısında, görseller ve kategoriler barındıran haber akışı.</p>
+                </div>
+                <button style="width:100%;" onclick="loadTemplate('news')">Yükle</button>
+            </div>
+
+            <div class="template-item">
+                <div class="template-info">
+                    <h5>🌤️ Minimal Hava Durumu</h5>
+                    <p>Cam efektli (Glassmorphism), haftalık tahminleri içeren hava durumu arayüzü.</p>
+                </div>
+                <button style="width:100%;" onclick="loadTemplate('weather')">Yükle</button>
+            </div>
+
         </div>
     </div>
 </div>
@@ -377,7 +432,7 @@ IDE_INTERFACE = """
 </html>`;
 
     window.onload = function() {
-        const savedCode = localStorage.getItem('clouddev_v10_code');
+        const savedCode = localStorage.getItem('clouddev_v11_code');
         const savedTheme = localStorage.getItem('clouddev_theme') || 'theme-cosmic';
         
         document.body.className = savedTheme;
@@ -431,7 +486,7 @@ IDE_INTERFACE = """
     }
 
     function autoSaveCode() {
-        localStorage.setItem('clouddev_v10_code', editor.value);
+        localStorage.setItem('clouddev_v11_code', editor.value);
         const indicator = document.getElementById('saveStatus');
         indicator.style.display = 'inline';
         setTimeout(() => { indicator.style.display = 'none'; }, 1500);
@@ -457,7 +512,7 @@ IDE_INTERFACE = """
         try {
             document.getElementById('previewFrame').srcdoc = editor.value;
         } catch(e) {
-            console.log("Önizleme yüklenemedi.");
+            console.log("Önizleme hatası.");
         }
     }
 
@@ -509,81 +564,22 @@ IDE_INTERFACE = """
 body { background: #090a0f; color: #f3f4f6; font-family: sans-serif; padding: 50px 20px; text-align: center; }
 .container { max-width: 600px; margin: auto; background: #121420; padding: 30px; border-radius: 20px; border: 1px solid #1f2937; }
 h1 { color: #38bdf8; }
+p { color: #9ca3af; font-size: 16px; }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>Geliştirici Portfolyosu</h1>
-  <p>CloudDev v10 Canlı Tasarım Altyapısı.</p>
+  <p>CloudDev v11 Canlı Tasarım Mimarisi İle Yayında.</p>
 </div>
 </body>
 </html>`,
-        ecommerce: defaultCode
-    };
-
-    function loadTemplate(key) {
-        if(confirm("Mevcut kodlarınız silinecek. Devam edilsin mi?")) {
-            editor.value = templates[key];
-            handleEditorInput();
-            switchTab('editor-tab');
-        }
-    }
-
-    async function pushToGithub() {
-        const code = editor.value;
-        const token = document.getElementById('githubToken').value;
-        const repo = document.getElementById('repoName').value;
-        if(!token || !repo) { alert("Lütfen alanları eksiksiz doldurun!"); return; }
-
-        try {
-            const response = await fetch('/api/github-push', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: code, token: token, repo: repo })
-            });
-            const data = await response.json();
-            alert(data.message);
-        } catch(e) {
-            alert("GitHub push bağlantı hatası.");
-        }
-    }
-</script>
-</body>
-</html>
-"""
-
-@app.route('/')
-def index():
-    return render_template_string(IDE_INTERFACE)
-
-@app.route('/api/ask-ai', methods=['POST'])
-def ask_ai():
-    data = request.json or {}
-    user_prompt = data.get('prompt', '')
-    current_code = data.get('current_code', '')
-    
-    API_URL = "https://api-inference.huggingface.co/models/Qwen/Qwen2.5-Coder-7B-Instruct"
-    system_instruction = "Sen profesyonel bir frontend mühendisisin. Verilen HTML kodunu bozmadan isteğe göre güncelle ve sadece saf kodu döndür. Açıklama veya markdown sembolü ekleme."
-    
-    payload = {
-        "inputs": f"<|im_start|>system\n{system_instruction}<|im_end|>\n<|im_start|>user\nMevcut Kod:\n{current_code}\n\nİstek: {user_prompt}<|im_end|>\n<|im_start|>assistant\n",
-        "parameters": {"max_new_tokens": 1600, "temperature": 0.3}
-    }
-    
-    try:
-        res = requests.post(API_URL, json=payload, timeout=25)
-        if res.status_code == 200:
-            raw_text = res.json()[0]['generated_text']
-            updated_code = raw_text.split("<|im_start|>assistant\n")[-1].strip() if "<|im_start|>assistant\n" in raw_text else raw_text
-            
-            for term in ["```html", "```css", "```js", "```", "<|im_end|>"]:
-                updated_code = updated_code.replace(term, "")
-            return jsonify({"status": "success", "updated_code": updated_code.strip()})
-        return jsonify({"status": "error", "message": f"AI Hatası (Kod: {res.status_code})"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
-
-@app.route('/api/github-push', methods=['POST'])
-def github_push():
-    data = request.json or {}
-    user_code = data
+        ecommerce: defaultCode,
+        music: `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  body { background: #0e0b16; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+  .player { background: #1b1429; padding: 24px; border-radius: 24px; width: 300px; text-align: center; border: 1px solid #4717f6; color: white; }
+  .cover { background: linear-gradient(45deg, #a239ca, #4717f6)
