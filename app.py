@@ -10,6 +10,13 @@ IDE_INTERFACE = """
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
+    <title>CloudDev Pro</title>
+</head>
+<body>
+    </body>
+</html>
+
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CloudDev Studio v11 Cosmic Ultimate</title>
     <style>
